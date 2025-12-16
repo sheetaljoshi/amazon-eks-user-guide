@@ -1,0 +1,29 @@
+include::../attributes.txt[]
+
+[.topic]
+[#eks-optimized-amis]
+= Create nodes with pre-built optimized images
+:info_titleabbrev: Pre-built optimized AMIs
+
+[abstract]
+--
+You can deploy nodes with pre-built Amazon EKS optimized link:AWSEC2/latest/UserGuide/AMIs.html[Amazon Machine Images,type="documentation"] (AMIs) or your own custom AMIs.
+--
+
+You can deploy nodes with pre-built Amazon EKS optimized link:AWSEC2/latest/UserGuide/AMIs.html[Amazon Machine Images,type="documentation"] (AMIs) or your own custom AMIs when you use managed node groups or self-managed nodes. If you are running hybrid nodes, see <<hybrid-nodes-os>>. For information about each type of Amazon EKS optimized AMI, see one of the following topics. For instructions on how to create your own custom AMI, see <<eks-ami-build-scripts>>.
+
+With Amazon EKS Auto Mode, EKS manages the EC2 instance including selecting and updating the AMI. 
+
+[.topiclist]
+[[Topic List]]
+
+[.topic]
+include::eks-ami-deprecation-faqs.adoc[leveloffset=+1]
+
+include::eks-optimized-ami.adoc[leveloffset=+1]
+
+include::eks-optimized-ami-bottlerocket.adoc[leveloffset=+1]
+
+include::eks-partner-amis.adoc[leveloffset=+1]
+
+include::eks-optimized-windows-ami.adoc[leveloffset=+1]

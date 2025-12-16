@@ -1,0 +1,67 @@
+include::../attributes.txt[]
+
+[.topic]
+[#cluster-auth]
+= Learn how access control works in Amazon EKS
+:info_titleabbrev: Manage access
+
+[abstract]
+--
+Learn how to manage access to your EKS cluster. First, this includes granting developers or external services access to Kubernetes. Second, this includes granting Kubernetes workloads access to {aws} services.
+--
+
+Learn how to manage access to your Amazon EKS cluster. Using Amazon EKS requires knowledge of how both Kubernetes and {aws} Identity and Access Management ({aws} IAM) handle access control.  
+
+*This section includes:*
+
+*<<grant-k8s-access>>* -- Learn how to enable applications or users to authenticate to the Kubernetes API. You can use access entries, the aws-auth ConfigMap, or an external OIDC provider.  
+
+*<<view-kubernetes-resources>>* -- Learn how to configure the {aws-management-console} to communicate with your Amazon EKS cluster. Use the console to view Kubernetes resources in the cluster, such as namespaces, nodes, and Pods.
+
+*<<create-kubeconfig>>* -- Learn how to configure kubectl to communicate with your Amazon EKS cluster. Use the {aws} CLI to create a kubeconfig file. 
+
+*<<service-accounts>>* -- Learn how to associate a Kubernetes service account with {aws} IAM Roles. You can use Pod Identity or IAM Roles for Service Accounts (IRSA).  
+
+== Common Tasks
+
+
+* Grant developers access to the Kubernetes API. View Kubernetes resources in the {aws-management-console}.  
++
+** Solution: <<access-entries,Use access entries>> to associate Kubernetes RBAC permissions with {aws} IAM Users or Roles.
+* Configure kubectl to talk to an Amazon EKS cluster using {aws} Credentials. 
++
+** Solution: Use the {aws} CLI to <<create-kubeconfig, create a kubeconfig file>>. 
+* Use an external identity provider, such as Ping Identity, to authenticate users to the Kubernetes API.
++
+** Solution: <<authenticate-oidc-identity-provider,Link an external OIDC provider>>.
+* Grant workloads on your Kubernetes cluster the ability to call {aws} APIs.  
++
+** Solution: <<pod-identities,Use Pod Identity>> to associate an {aws} IAM Role to a Kubernetes Service Account.  
+
+== Background
+
+
+
+* https://kubernetes.io/docs/concepts/security/service-accounts/[Learn how Kubernetes Service Accounts work.]
+* https://kubernetes.io/docs/reference/access-authn-authz/rbac/[Review the Kubernetes Role Based Access Control (RBAC) Model]
+* For more information about managing access to {aws} resources, see the link:IAM/latest/UserGuide/intro-structure.html[{aws} IAM User Guide,type="documentation"]. Alternatively, take a free https://explore.skillbuilder.aws/learn/course/external/view/elearning/120/introduction-to-aws-identity-and-access-management-iam[introductory training on using {aws} IAM]. 
+
+== Considerations for EKS Auto Mode
+
+EKS Auto Mode integrates with EKS Pod Identity and EKS EKS access entries. 
+
+* EKS Auto Mode uses access entries to grant the EKS control plane Kubernetes permissions. For example, the access policies enable EKS Auto Mode to read information about network endpoints and services. 
+** You cannot disable access entries on an EKS Auto Mode cluster.
+** You can optionally enable the `aws-auth` `ConfigMap`.
+** The access entries for EKS Auto Mode are automatically configured. You can view these access entries, but you cannot modify them. 
+** If you use a NodeClass to create a custom Node IAM Role, you need to create an access entry for the role using the AmazonEKSAutoNodePolicy access policy. 
+* If you want to grant workloads permissions for {aws} services, use EKS Pod Identity.
+** You do not need to install the Pod Identity agent on EKS Auto Mode clusters. 
+
+include::k8s-access/grant-k8s-access.adoc[leveloffset=+1]
+
+include::view-kubernetes-resources.adoc[leveloffset=+1]
+
+include::create-kubeconfig.adoc[leveloffset=+1]
+
+include::aws-access/service-accounts.adoc[leveloffset=+1]

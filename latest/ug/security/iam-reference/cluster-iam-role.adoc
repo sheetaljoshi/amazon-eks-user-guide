@@ -1,0 +1,97 @@
+include::../../attributes.txt[]
+
+[.topic]
+[#cluster-iam-role]
+= Amazon EKS cluster IAM role
+:info_titleabbrev: Cluster IAM role
+
+[abstract]
+--
+Learn how to create and configure the required {aws} Identity and Access Management role for Amazon EKS clusters to manage nodes and load balancers using managed or custom IAM policies.
+--
+
+An Amazon EKS cluster IAM role is required for each cluster. Kubernetes clusters managed by Amazon EKS use this role to manage nodes and the https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/guide/service/annotations/#legacy-cloud-provider[legacy Cloud Provider] uses this role to create load balancers with Elastic Load Balancing for services.
+
+Before you can create Amazon EKS clusters, you must create an IAM role with either of the following IAM policies:
+
+
+
+* link:aws-managed-policy/latest/reference/AmazonEKSClusterPolicy.html[AmazonEKSClusterPolicy,type="documentation"]
+* A custom IAM policy. The minimal permissions that follow allows the Kubernetes cluster to manage nodes, but doesn't allow the https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/guide/service/annotations/#legacy-cloud-provider[legacy Cloud Provider] to create load balancers with Elastic Load Balancing. Your custom IAM policy must have at least the following permissions:
++
+[source,json,subs="verbatim,attributes"]
+----
+include::iam_snippet:de80ec81-9dde-4bf1-83df-de287477358d[]
+----
+
+
+[NOTE]
+====
+
+Prior to October 3, 2023, link:aws-managed-policy/latest/reference/AmazonEKSClusterPolicy.html[AmazonEKSClusterPolicy,type="documentation"] was required on the IAM role for each cluster.
+
+Prior to April 16, 2020, link:aws-managed-policy/latest/reference/AmazonEKSServicePolicy.html[AmazonEKSServicePolicy,type="documentation"] and link:aws-managed-policy/latest/reference/AmazonEKSClusterPolicy.html[AmazonEKSClusterPolicy,type="documentation"] was required and the suggested name for the role was `eksServiceRole`. With the `AWSServiceRoleForAmazonEKS` service-linked role, the link:aws-managed-policy/latest/reference/AmazonEKSServicePolicy.html[AmazonEKSServicePolicy,type="documentation"] policy is no longer required for clusters created on or after April 16, 2020.
+
+====
+
+[#check-service-role]
+== Check for an existing cluster role
+
+You can use the following procedure to check and see if your account already has the Amazon EKS cluster role.
+
+. Open the IAM console at https://console.aws.amazon.com/iam/.
+. In the left navigation pane, choose *Roles*.  
+. Search the list of roles for `eksClusterRole`. If a role that includes `eksClusterRole` doesn't exist, then see <<create-service-role>> to create the role. If a role that includes `eksClusterRole` does exist, then select the role to view the attached policies.
+. Choose *Permissions*.
+. Ensure that the *AmazonEKSClusterPolicy* managed policy is attached to the role. If the policy is attached, your Amazon EKS cluster role is properly configured.
+. Choose *Trust relationships*, and then choose *Edit trust policy*.
+. Verify that the trust relationship contains the following policy. If the trust relationship matches the following policy, choose *Cancel*. If the trust relationship doesn't match, copy the policy into the *Edit trust policy* window and choose *Update policy*.  
++
+[source,json,subs="verbatim,attributes"]
+----
+include::iam_snippet:c83fb40d-63b7-4444-992f-a9a3d76e2396[]
+----
+
+
+[#create-service-role]
+== Creating the Amazon EKS cluster role
+
+You can use the {aws-management-console} or the {aws} CLI to create the cluster role.
+
+
+
+{aws-management-console}::
+.. Open the IAM console at https://console.aws.amazon.com/iam/.
+.. Choose *Roles*, then *Create role*.
+.. Under *Trusted entity type*, select *{aws} service*.
+.. From the *Use cases for other {aws} services* dropdown list, choose *EKS*.
+.. Choose *EKS - Cluster* for your use case, and then choose *Next*.
+.. On the *Add permissions* tab, choose *Next*.
+.. For *Role name*, enter a unique name for your role, such as `eksClusterRole`.
+.. For *Description*, enter descriptive text such as `Amazon EKS - Cluster role`.
+.. Choose *Create role*.
+
+
+{aws} CLI::
+.. Copy the following contents to a file named [.replaceable]`cluster-trust-policy.json`. 
++
+[source,json,subs="verbatim,attributes"]
+----
+include::iam_snippet:cd984bb8-7fc7-4d7b-8cb6-38a2bb0a48fc[]
+----
+.. Create the role. You can replace [.replaceable]`eksClusterRole` with any name that you choose.
++
+[source,bash,subs="verbatim,attributes"]
+----
+aws iam create-role \
+  --role-name eksClusterRole \
+  --assume-role-policy-document file://"cluster-trust-policy.json"
+----
+.. Attach the required IAM policy to the role.
++
+[source,bash,subs="verbatim,attributes"]
+----
+aws iam attach-role-policy \
+  --policy-arn {arn-aws}iam::aws:policy/AmazonEKSClusterPolicy \
+  --role-name eksClusterRole
+----

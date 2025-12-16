@@ -1,0 +1,5 @@
+# default rule, unless a more specific rule applies
+* @awsdocs/eks-admins
+
+# default rule for user guide
+/latest/ug/ @awsdocs/eks-contributors

@@ -1,0 +1,208 @@
+include::../attributes.txt[]
+
+[.topic]
+[#kro-considerations]
+= kro considerations for EKS
+:info_titleabbrev: Considerations
+
+[abstract]
+--
+Plan your kro deployment with EKS-specific patterns, RBAC configuration, and integration strategies.
+--
+
+This topic covers important considerations for using the EKS Capability for kro, including when to use resource composition, RBAC patterns, and integration with other EKS capabilities.
+
+== When to use kro
+
+kro is designed for creating reusable infrastructure patterns and custom APIs that simplify complex resource management.
+
+*Use kro when you need to*:
+
+* Create self-service platforms with simplified APIs for application teams
+* Standardize infrastructure patterns across teams (database + backup + monitoring)
+* Manage resource dependencies and pass values between resources
+* Build custom abstractions that hide implementation complexity
+* Compose multiple ACK resources into higher-level building blocks
+* Enable GitOps workflows for complex infrastructure stacks
+
+*Don't use kro when*:
+
+* Managing simple, standalone resources (use ACK or Kubernetes resources directly)
+* You need dynamic runtime logic (kro is declarative, not imperative)
+* Resources don't have dependencies or shared configuration
+
+kro excels at creating "paved paths" - opinionated, reusable patterns that make it easy for teams to deploy complex infrastructure correctly.
+
+== RBAC patterns
+
+kro enables separation of concerns between platform teams who create ResourceGraphDefinitions and application teams who create instances.
+
+=== Platform team responsibilities
+
+Platform teams create and maintain ResourceGraphDefinitions (RGDs) that define custom APIs.
+
+*Permissions needed*:
+
+* Create, update, delete ResourceGraphDefinitions
+* Manage underlying resource types (Deployments, Services, ACK resources)
+* Access to all namespaces where RGDs will be used
+
+*Example ClusterRole for platform team*:
+
+[source,yaml]
+----
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: platform-kro-admin
+rules:
+- apiGroups: ["kro.run"]
+  resources: ["resourcegraphdefinitions"]
+  verbs: ["*"]
+- apiGroups: ["*"]
+  resources: ["*"]
+  verbs: ["get", "list", "watch"]
+----
+
+For detailed RBAC configuration, see <<kro-permissions>>.
+
+=== Application team responsibilities
+
+Application teams create instances of custom resources defined by RGDs without needing to understand the underlying complexity.
+
+*Permissions needed*:
+
+* Create, update, delete instances of custom resources
+* Read access to their namespace
+* No access to underlying resources or RGDs
+
+*Benefits*:
+
+* Teams use simple, high-level APIs
+* Platform teams control implementation details
+* Reduced risk of misconfiguration
+* Faster onboarding for new team members
+
+== Integration with other EKS capabilities
+
+=== Composing ACK resources
+
+kro is particularly powerful when combined with ACK to create infrastructure patterns.
+
+*Common patterns*:
+
+* **Application with storage**: S3 bucket + SQS queue + notification configuration
+* **Database stack**: RDS instance + parameter group + security group + Secrets Manager secret
+* **Networking**: VPC + subnets + route tables + security groups + NAT gateways
+* **Compute with storage**: EC2 instance + EBS volumes + IAM instance profile
+
+kro handles dependency ordering, passes values between resources (like ARNs and connection strings), and manages the full lifecycle as a single unit.
+
+For examples of composing ACK resources, see <<ack-concepts>>.
+
+=== GitOps with Argo CD
+
+Use the EKS Capability for Argo CD to deploy both RGDs and instances from Git repositories.
+
+*Repository organization*:
+
+* **Platform repo**: Contains ResourceGraphDefinitions managed by platform team
+* **Application repos**: Contain instances of custom resources managed by app teams
+* **Shared repo**: Contains both RGDs and instances for smaller organizations
+
+*Considerations*:
+
+* Deploy RGDs before instances (Argo CD sync waves can help)
+* Use separate Argo CD Projects for platform and application teams
+* Platform team controls RGD repository access
+* Application teams have read-only access to RGD definitions
+
+For more on Argo CD, see <<working-with-argocd>>.
+
+== Organizing ResourceGraphDefinitions
+
+Organize RGDs by purpose, complexity, and ownership.
+
+*By purpose*:
+
+* **Infrastructure**: Database stacks, networking, storage
+* **Application**: Web apps, APIs, batch jobs
+* **Platform**: Shared services, monitoring, logging
+
+*By complexity*:
+
+* **Simple**: 2-3 resources with minimal dependencies
+* **Moderate**: 5-10 resources with some dependencies
+* **Complex**: 10+ resources with complex dependencies
+
+*Naming conventions*:
+
+* Use descriptive names: `webapp-with-database`, `s3-notification-queue`
+* Include version in name for breaking changes: `webapp-v2`
+* Use consistent prefixes for related RGDs: `platform-*`, `app-*`
+
+*Namespace strategy*:
+
+* RGDs are cluster-scoped (not namespaced)
+* Instances are namespaced
+* Use namespace selectors in RGDs to control where instances can be created
+
+== Versioning and updates
+
+Plan for RGD evolution and instance migration.
+
+*RGD updates*:
+
+* **Non-breaking changes**: Update RGD in place (add optional fields, new resources with includeWhen)
+* **Breaking changes**: Create new RGD with different name (webapp-v2)
+* **Deprecation**: Mark old RGDs with annotations, communicate migration timeline
+
+*Instance migration*:
+
+* Create new instances with updated RGD
+* Validate new instances work correctly
+* Delete old instances
+* kro handles underlying resource updates automatically
+
+*Best practices*:
+
+* Test RGD changes in non-production environments first
+* Use semantic versioning in RGD names for major changes
+* Document breaking changes and migration paths
+* Provide migration examples for application teams
+
+== Validation and testing
+
+Validate RGDs before deploying to production.
+
+*Validation strategies*:
+
+* **Schema validation**: kro validates RGD structure automatically
+* **Dry-run instances**: Create test instances in development namespaces
+* **Integration tests**: Verify composed resources work together
+* **Policy enforcement**: Use admission controllers to enforce organizational standards
+
+*Common issues to test*:
+
+* Resource dependencies and ordering
+* Value passing between resources (CEL expressions)
+* Conditional resource inclusion (includeWhen)
+* Status propagation from underlying resources
+* RBAC permissions for instance creation
+
+== Upstream documentation
+
+For detailed information on using kro:
+
+* link:https://kro.run/docs/guides/getting-started[Getting Started with kro^] - Creating ResourceGraphDefinitions
+* link:https://kro.run/docs/concepts/cel[CEL Expressions^] - Writing CEL expressions
+* link:https://kro.run/docs/guides/[kro Guides^] - Advanced composition patterns
+* link:https://kro.run/docs/troubleshooting[Troubleshooting^] - Troubleshooting and debugging
+
+== Next steps
+
+* <<kro-permissions>> - Configure RBAC for platform and application teams
+* <<kro-concepts>> - Understand kro concepts and resource lifecycle
+* <<kro-troubleshooting>> - Troubleshoot kro issues
+* <<ack-concepts>> - Learn about ACK resources for composition
+* <<working-with-argocd>> - Deploy RGDs and instances with GitOps

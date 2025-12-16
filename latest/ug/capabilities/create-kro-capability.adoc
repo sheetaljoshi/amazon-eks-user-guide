@@ -1,0 +1,62 @@
+include::../attributes.txt[]
+
+[.topic]
+[#create-kro-capability]
+= Create a kro capability
+:info_titleabbrev: Create kro capability
+
+[abstract]
+--
+Learn how to create a kro (Kube Resource Orchestrator) capability on your Amazon EKS cluster using the Console, {aws} CLI, or eksctl.
+--
+
+This topic explains how to create a kro capability on your Amazon EKS cluster.
+
+== Prerequisites
+
+Before creating a kro capability, ensure you have:
+
+* An existing Amazon EKS cluster running a supported Kubernetes version (all versions in standard and extended support are supported)
+* Sufficient IAM permissions to create capability resources on EKS clusters
+* (For CLI/eksctl) The appropriate CLI tool installed and configured
+
+[NOTE]
+====
+Unlike ACK and Argo CD, kro does not require additional IAM permissions beyond the trust policy.
+kro operates entirely within your cluster and does not make {aws} API calls.
+However, you still need to provide an IAM Capability Role with the appropriate trust policy.
+For information about configuring Kubernetes RBAC permissions for kro, see <<kro-permissions>>.
+====
+
+== Choose your tool
+
+You can create a kro capability using the {aws-management-console}, {aws} CLI, or eksctl:
+
+* <<kro-create-console>> - Use the Console for a guided experience
+* <<kro-create-cli>> - Use the {aws} CLI for scripting and automation
+* <<kro-create-eksctl>> - Use eksctl for a Kubernetes-native experience
+
+== What happens when you create a kro capability
+
+When you create a kro capability:
+
+. EKS creates the kro capability service and configures it to monitor and manage resources in your cluster
+. Custom Resource Definitions (CRDs) are installed in your cluster
+. The capability assumes the IAM Capability Role you provide (used only for the trust relationship)
+. kro begins watching for `ResourceGraphDefinition` resources and their instances
+. The capability status changes from `CREATING` to `ACTIVE`
+
+Once active, you can create ResourceGraphDefinitions to define custom APIs and create instances of those APIs.
+
+== Next steps
+
+After creating the kro capability:
+
+* <<kro-concepts>> - Understand kro concepts and resource composition
+* <<kro-concepts>> - Learn about SimpleSchema, CEL expressions, and resource composition patterns
+
+include::kro-create-console.adoc[leveloffset=+1]
+
+include::kro-create-cli.adoc[leveloffset=+1]
+
+include::kro-create-eksctl.adoc[leveloffset=+1]

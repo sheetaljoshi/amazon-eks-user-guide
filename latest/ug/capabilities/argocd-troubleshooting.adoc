@@ -1,0 +1,204 @@
+include::../attributes.txt[]
+
+[.topic]
+[#argocd-troubleshooting]
+= Troubleshoot issues with Argo CD capabilities
+:info_titleabbrev: Troubleshooting
+
+[abstract]
+--
+Diagnose and resolve common issues with the EKS Capability for Argo CD.
+--
+
+This topic provides troubleshooting guidance for the EKS Capability for Argo CD, including capability health checks, application sync issues, repository authentication, and multi-cluster deployments.
+
+[NOTE]
+====
+EKS Capabilities are fully managed and run outside your cluster.
+You don't have access to Argo CD server logs or the `argocd` namespace.
+Troubleshooting focuses on capability health, application status, and configuration.
+====
+
+== Capability is ACTIVE but applications aren't syncing
+
+If your Argo CD capability shows `ACTIVE` status but applications aren't syncing, check the capability health and application status.
+
+*Check capability health*:
+
+You can view capability health and status issues in the EKS console or using the {aws} CLI.
+
+*Console*:
+
+. Open the Amazon EKS console at https://console.aws.amazon.com/eks/home#/clusters.
+. Select your cluster name.
+. Choose the *Observability* tab.
+. Choose *Monitor cluster*.
+. Choose the *Capabilities* tab to view health and status for all capabilities.
+
+*{aws} CLI*:
+
+[source,bash]
+----
+# View capability status and health
+aws eks describe-capability \
+  --region region-code \
+  --cluster-name my-cluster \
+  --capability-name my-argocd
+
+# Look for issues in the health section
+----
+
+*Common causes*:
+
+* *Repository not configured*: Git repository not added to Argo CD
+* *Authentication failed*: SSH key, token, or CodeCommit credentials invalid
+* *Application not created*: No Application resources exist in the cluster
+* *Sync policy*: Manual sync required (auto-sync not enabled)
+* *IAM permissions*: Missing permissions for CodeCommit or Secrets Manager
+
+*Check application status*:
+
+[source,bash]
+----
+# List applications
+kubectl get application -n argocd
+
+# View sync status
+kubectl get application my-app -n argocd -o jsonpath='{.status.sync.status}'
+
+# View application health
+kubectl get application my-app -n argocd -o jsonpath='{.status.health}'
+----
+
+*Check application conditions*:
+
+[source,bash]
+----
+# Describe application to see detailed status
+kubectl describe application my-app -n argocd
+
+# View application health
+kubectl get application my-app -n argocd -o jsonpath='{.status.health}'
+----
+
+== Applications stuck in "Progressing" state
+
+If an application shows `Progressing` but never reaches `Healthy`, check the application's resource status and events.
+
+*Check resource health*:
+
+[source,bash]
+----
+# View application resources
+kubectl get application my-app -n argocd -o jsonpath='{.status.resources}'
+
+# Check for unhealthy resources
+kubectl describe application my-app -n argocd | grep -A 10 "Health Status"
+----
+
+*Common causes*:
+
+* *Deployment not ready*: Pods failing to start or readiness probes failing
+* *Resource dependencies*: Resources waiting for other resources to be ready
+* *Image pull errors*: Container images not accessible
+* *Insufficient resources*: Cluster lacks CPU or memory for pods
+
+*Verify target cluster configuration* (for multi-cluster setups):
+
+[source,bash,subs="verbatim,quotes"]
+----
+# List registered clusters
+kubectl get secret -n argocd -l argocd.argoproj.io/secret-type=cluster
+
+# View cluster secret details
+kubectl get secret [.replaceable]`cluster-secret-name` -n argocd -o yaml
+----
+
+== Repository authentication failures
+
+If Argo CD cannot access your Git repositories, verify the authentication configuration.
+
+*For CodeCommit repositories*:
+
+Verify the IAM Capability Role has CodeCommit permissions:
+
+[source,bash,subs="verbatim,quotes"]
+----
+# View IAM policies
+aws iam list-attached-role-policies --role-name [.replaceable]`my-argocd-capability-role`
+aws iam list-role-policies --role-name [.replaceable]`my-argocd-capability-role`
+
+# Get specific policy details
+aws iam get-role-policy --role-name [.replaceable]`my-argocd-capability-role` --policy-name [.replaceable]`policy-name`
+----
+
+The role needs `codecommit:GitPull` permission for the repositories.
+
+*For private Git repositories*:
+
+Verify repository credentials are correctly configured:
+
+[source,bash,subs="verbatim,quotes"]
+----
+# Check repository secret exists
+kubectl get secret -n argocd [.replaceable]`repo-secret-name` -o yaml
+----
+
+Ensure the secret contains the correct authentication credentials (SSH key, token, or username/password).
+
+*For repositories using Secrets Manager*:
+
+[source,bash,subs="verbatim,quotes"]
+----
+# Verify IAM Capability Role has Secrets Manager permissions
+aws iam list-attached-role-policies --role-name [.replaceable]`my-argocd-capability-role`
+
+# Test secret retrieval
+aws secretsmanager get-secret-value --secret-id [.replaceable]`arn:aws:secretsmanager:region-code:111122223333:secret:my-secret`
+----
+
+== Multi-cluster deployment issues
+
+If applications aren't deploying to remote clusters, verify the cluster registration and access configuration.
+
+*Check cluster registration*:
+
+[source,bash]
+----
+# List registered clusters
+kubectl get secret -n argocd -l argocd.argoproj.io/secret-type=cluster
+
+# Verify cluster secret format
+kubectl get secret CLUSTER_SECRET_NAME -n argocd -o yaml
+----
+
+Ensure the `server` field contains the EKS cluster ARN, not the Kubernetes API URL.
+
+*Verify target cluster Access Entry*:
+
+On the target cluster, check that the Argo CD Capability Role has an Access Entry:
+
+[source,bash,subs="verbatim,quotes"]
+----
+# List access entries (run on target cluster or use AWS CLI)
+aws eks list-access-entries --cluster-name [.replaceable]`target-cluster`
+
+# Describe specific access entry
+aws eks describe-access-entry \
+  --cluster-name [.replaceable]`target-cluster` \
+  --principal-arn arn:aws:iam::[.replaceable]`111122223333`:role/[.replaceable]`my-argocd-capability-role`
+----
+
+*Check IAM permissions for cross-account*:
+
+For cross-account deployments, verify the Argo CD Capability Role has an Access Entry on the target cluster.
+The managed capability uses EKS Access Entries for cross-account access, not IAM role assumption.
+
+For more on multi-cluster configuration, see <<argocd-register-clusters>>.
+
+== Next steps
+
+* <<argocd-considerations>> - Argo CD considerations and best practices
+* <<working-with-argocd>> - Create and manage Argo CD Applications
+* <<argocd-register-clusters>> - Configure multi-cluster deployments
+* <<capabilities-troubleshooting>> - General capability troubleshooting guidance

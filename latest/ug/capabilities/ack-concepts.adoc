@@ -1,0 +1,326 @@
+include::../attributes.txt[]
+
+[.topic]
+[#ack-concepts]
+= ACK concepts
+:info_titleabbrev: ACK concepts
+
+[abstract]
+--
+Understand core ACK concepts including resource lifecycle, reconciliation, status conditions, and resource ownership.
+--
+
+ACK manages {aws} resources through Kubernetes APIs by continuously reconciling the desired state in your manifests with the actual state in {aws}.
+When you create or update a Kubernetes custom resource, ACK makes the necessary {aws} API calls to create or modify the corresponding {aws} resource, then monitors it for drift and updates the Kubernetes status to reflect the current state.
+This approach lets you manage infrastructure using familiar Kubernetes tools and workflows while maintaining consistency between your cluster and {aws}.
+
+This topic explains the fundamental concepts behind how ACK manages {aws} resources through Kubernetes APIs.
+
+== Getting started with ACK
+
+After creating the ACK capability (see <<create-ack-capability>>), you can start managing {aws} resources using Kubernetes manifests in your cluster.
+
+As an example, create this S3 bucket manifest in `bucket.yaml`, choosing your own unique bucket name.
+
+[source,yaml,subs="verbatim,attributes,quotes"]
+----
+apiVersion: s3.services.k8s.aws/v1alpha1
+kind: Bucket
+metadata:
+  name: my-test-bucket
+  namespace: default
+spec:
+  name: [.replaceable]`my-unique-bucket-name-12345`
+----
+
+Apply the manifest:
+
+[source,bash]
+----
+kubectl apply -f bucket.yaml
+----
+
+Check the status:
+
+[source,bash]
+----
+kubectl get bucket my-test-bucket
+kubectl describe bucket my-test-bucket
+----
+
+Verify the bucket was created in {aws}:
+
+[source,bash,subs="verbatim,attributes,quotes"]
+----
+aws s3 ls | grep [.replaceable]`my-unique-bucket-name-12345`
+----
+
+Delete the Kubernetes resource:
+
+[source,bash]
+----
+kubectl delete bucket my-test-bucket
+----
+
+Verify the bucket was deleted from {aws}:
+
+[source,bash,subs="verbatim,attributes,quotes"]
+----
+aws s3 ls | grep [.replaceable]`my-unique-bucket-name-12345`
+----
+
+The bucket should no longer appear in the list, demonstrating that ACK manages the full lifecycle of {aws} resources.
+
+For more information on getting started with ACK, see link:https://aws-controllers-k8s.github.io/community/docs/user-docs/getting-started/[Getting Started with ACK^].
+
+== Resource lifecycle and reconciliation
+
+ACK uses a continuous reconciliation loop to ensure your {aws} resources match the desired state defined in your Kubernetes manifests.
+
+*How reconciliation works*:
+
+. You create or update a Kubernetes custom resource (for example, an S3 Bucket)
+. ACK detects the change and compares the desired state with the actual state in {aws}
+. If they differ, ACK makes {aws} API calls to reconcile the difference
+. ACK updates the resource status in Kubernetes to reflect the current state
+. The loop repeats continuously, typically every few hours
+
+Reconciliation is triggered when you create a new Kubernetes resource, update an existing resource's `spec`, or when ACK detects drift in {aws} from manual changes made outside ACK.
+Additionally, ACK performs periodic reconciliation with a resync period of 10 hours.
+Changes to Kubernetes resources trigger immediate reconciliation, while passive drift detection of upstream {aws} resource changes occurs during the periodic resync.
+
+When working through the getting started example above, ACK performs these steps:
+
+. Checks if bucket exists in {aws}
+. If not, calls `s3:CreateBucket`
+. Updates Kubernetes status with bucket ARN and state
+. Continues monitoring for drift
+
+To learn more about how ACK works, see link:https://aws-controllers-k8s.github.io/community/docs/user-docs/reconciliation/[ACK Reconciliation^].
+
+== Status conditions
+
+ACK resources use status conditions to communicate their state.
+Understanding these conditions helps you troubleshoot issues and understand resource health.
+
+* *Ready*: Indicates the resource is ready to be consumed (standardized Kubernetes condition).
+* *ACK.ResourceSynced*: Indicates the resource spec matches the {aws} resource state.
+* *ACK.Terminal*: Indicates an unrecoverable error has occurred.
+* *ACK.Adopted*: Indicates the resource was adopted from an existing {aws} resource rather than created new.
+* *ACK.Recoverable*: Indicates a recoverable error that may resolve without updating the spec.
+* *ACK.Advisory*: Provides advisory information about the resource.
+* *ACK.LateInitialized*: Indicates whether late initialization of fields is complete.
+* *ACK.ReferencesResolved*: Indicates whether all `AWSResourceReference` fields have been resolved.
+* *ACK.IAMRoleSelected*: Indicates whether an IAMRoleSelector has been selected to manage this resource.
+
+Check resource status:
+
+[source,bash]
+----
+# Check if resource is ready
+kubectl get bucket my-bucket -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'
+
+# Check for terminal errors
+kubectl get bucket my-bucket -o jsonpath='{.status.conditions[?(@.type=="ACK.Terminal")]}'
+----
+
+Example status:
+
+[source,yaml]
+----
+status:
+  conditions:
+  - type: Ready
+    status: "True"
+    lastTransitionTime: "2024-01-15T10:30:00Z"
+  - type: ACK.ResourceSynced
+    status: "True"
+    lastTransitionTime: "2024-01-15T10:30:00Z"
+  - type: ACK.Terminal
+    status: "True"
+  ackResourceMetadata:
+    arn: arn:aws:s3:::my-unique-bucket-name
+    ownerAccountID: "111122223333"
+    region: us-west-2
+----
+
+To learn more about ACK status and conditions, see link:https://aws-controllers-k8s.github.io/community/docs/user-docs/conditions/[ACK Conditions^].
+
+== Deletion policies
+
+ACK's deletion policy controls what happens to {aws} resources when you delete the Kubernetes resource.
+
+*Delete (default)*
+
+The {aws} resource is deleted when you delete the Kubernetes resource:
+This is the default behavior.
+
+[source,yaml]
+----
+# No annotation needed - this is the default
+apiVersion: s3.services.k8s.aws/v1alpha1
+kind: Bucket
+metadata:
+  name: temp-bucket
+spec:
+  name: temporary-bucket
+----
+
+Deleting this resource deletes the S3 bucket in {aws}.
+
+*Retain*
+
+The {aws} resource is kept when you delete the Kubernetes resource:
+
+[source,yaml]
+----
+apiVersion: s3.services.k8s.aws/v1alpha1
+kind: Bucket
+metadata:
+  name: important-bucket
+  annotations:
+    services.k8s.aws/deletion-policy: "retain"
+spec:
+  name: production-data-bucket
+----
+
+Deleting this resource removes it from Kubernetes but leaves the S3 bucket in {aws}.
+
+The `retain` policy is useful for production databases that should outlive the Kubernetes resource, shared resources used by multiple applications, resources with important data that shouldn't be accidentally deleted, or temporary ACK management where you adopt a resource, configure it, then release it back to manual management.
+
+To learn more about ACK deletion policy, see link:https://aws-controllers-k8s.github.io/community/docs/user-docs/deletion-policy/[ACK Deletion Policy^].
+
+== Resource adoption
+
+Adoption allows you to bring existing {aws} resources under ACK management without recreating them.
+
+When to use adoption:
+
+* Migrating existing infrastructure to ACK management
+* Recovering orphaned {aws} resources in case of accidental resource deletion in Kubernetes
+* Importing resources created by other tools (CloudFormation, Terraform)
+
+How adoption works:
+
+[source,yaml]
+----
+apiVersion: s3.services.k8s.aws/v1alpha1
+kind: Bucket
+metadata:
+  name: existing-bucket
+  annotations:
+    services.k8s.aws/adoption-policy: "adopt-or-create"
+spec:
+  name: my-existing-bucket-name
+----
+
+When you create this resource:
+
+. ACK checks if a bucket with that name exists in {aws}
+. If found, ACK adopts it (no API calls to create)
+. ACK reads the current configuration from {aws}
+. ACK updates the Kubernetes status to reflect the actual state
+. Future updates reconcile the resource normally
+
+Once adopted, resources are managed like any other ACK resource, and deleting the Kubernetes resource will delete the {aws} resource unless you use the `retain` deletion policy.
+
+When adopting resources, the {aws} resource must already exist and ACK needs read permissions to discover it.
+The `adopt-or-create` policy adopts the resource if it exists, or creates it if it doesn't.
+This is useful when you want a declarative workflow that works whether the resource exists or not.
+
+To learn more about ACK resource adoption, see link:https://aws-controllers-k8s.github.io/community/docs/user-docs/adopted-resource/[ACK Resource Adoption^].
+
+== Cross-account and cross-region resources
+
+ACK can manage resources in different {aws} accounts and regions from a single cluster.
+
+*Cross-region resource annotations*
+
+You can specify the region of an {aws} resource using an annotation:
+
+[source,yaml]
+----
+apiVersion: s3.services.k8s.aws/v1alpha1
+kind: Bucket
+metadata:
+  name: eu-bucket
+  annotations:
+    services.k8s.aws/region: eu-west-1
+spec:
+  name: my-eu-bucket
+----
+
+You can also specify the region of all {aws} resources created in a given namespace:
+
+*Namespace annotations*
+
+Set a default region for all resources in a namespace:
+
+[source,yaml]
+----
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: production
+  annotations:
+    services.k8s.aws/default-region: us-west-2
+----
+
+Resources created in this namespace use this region unless overridden with a resource-level annotation.
+
+*Cross-account*
+
+Use IAM Role Selectors to map specific IAM roles to namespaces:
+
+[source,yaml]
+----
+apiVersion: services.k8s.aws/v1alpha1
+kind: IAMRoleSelector
+metadata:
+  name: target-account-config
+spec:
+  arn: arn:aws:iam::444455556666:role/ACKTargetAccountRole
+  namespaceSelector:
+    names:
+      - production
+----
+
+Resources created in the mapped namespace automatically use the specified role.
+
+To learn more about IAM Role Selectors, see link:https://aws-controllers-k8s.github.io/docs/guides/cross-account[ACK Cross-Account Resource Management^].
+For cross-account configuration details, see <<ack-permissions>>.
+
+== Error handling and retry behavior
+
+ACK automatically handles transient errors and retries failed operations.
+
+Retry strategy:
+
+* Transient errors (rate limiting, temporary service issues, insufficient permissions) trigger automatic retries
+* Exponential backoff prevents overwhelming {aws} APIs
+* Maximum retry attempts vary by error type
+* Permanent errors (invalid parameters, resource name conflicts) don't retry
+
+Check resource status for error details using `kubectl describe`:
+
+[source,bash]
+----
+kubectl describe bucket my-bucket
+----
+
+Look for status conditions with error messages, events showing recent reconciliation attempts, and the `message` field in status conditions explaining failures.
+Common errors include insufficient IAM permissions, resource name conflicts in {aws}, invalid configuration values in the `spec`, and exceeded {aws} service quotas.
+
+For troubleshooting common errors, see <<ack-troubleshooting>>.
+
+== Resource composition with kro
+
+For composing and connecting multiple ACK resources together, use the EKS Capability for kro (Kube Resource Orchestrator).
+kro provides a declarative way to define groups of resources, passing configuration between resources to manage complex infrastructure patterns simply.
+
+For detailed examples of creating custom resource compositions with ACK resources, see <<kro-concepts>>
+
+
+== Next steps
+
+* <<ack-considerations>> - EKS-specific patterns and integration strategies

@@ -1,0 +1,34 @@
+include::../../attributes.txt[]
+
+[.topic]
+[#pod-id-role]
+= Create IAM role with trust policy required by EKS Pod Identity
+:info_titleabbrev: EKS Pod Identity role
+
+[abstract]
+--
+Learn how to configure the IAM trust policy for Amazon EKS Pod Identity to allow Kubernetes pods to assume IAM roles and access {aws} resources securely using Amazon EKS condition keys.
+--
+
+[source,json,subs="verbatim,attributes"]
+----
+include::iam_snippet:fd9b4d3f-f5db-4638-a213-2a29dc8f391e[]
+----
+
+*`sts:AssumeRole`*::
+EKS Pod Identity uses `AssumeRole` to assume the IAM role before passing the temporary credentials to your pods.
+
+
+*`sts:TagSession`*::
+EKS Pod Identity uses `TagSession` to include _session tags_ in the requests to {aws} STS.
+
+*Setting Conditions*::
+You can use these tags in the _condition keys_ in the trust policy to restrict which service accounts, namespaces, and clusters can use this role. For the list of request tags that Pod Identity adds, see <<pod-id-abac-tags>>.
++
+For example, you can restrict which pods can assume the role a Pod Identity IAM Role to a specific `ServiceAccount` and `Namespace` with the following Trust Policy with the added `Condition`:
+[source,json,subs="verbatim,attributes"]
+----
+include::iam_snippet:064584d9-099b-4928-a2c8-51558015f494[]
+----
+
+For a list of Amazon EKS condition keys, see link:service-authorization/latest/reference/list_amazonelastickubernetesservice.html#amazonelastickubernetesservice-policy-keys[Conditions defined by Amazon Elastic Kubernetes Service,type="documentation"] in the _Service Authorization Reference_. To learn which actions and resources you can use a condition key with, see link:service-authorization/latest/reference/list_amazonelastickubernetesservice.html#amazonelastickubernetesservice-actions-as-permissions[Actions defined by Amazon Elastic Kubernetes Service,type="documentation"].

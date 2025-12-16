@@ -1,0 +1,67 @@
+include::../attributes.txt[]
+
+[.topic]
+[#ack-comparison]
+= Comparing EKS Capability for ACK to self-managed ACK
+:info_titleabbrev: Comparison to self-managed
+
+[abstract]
+--
+Understand the differences between the EKS Capability for ACK and self-managed ACK controllers.
+--
+
+The EKS Capability for ACK provides the same functionality as self-managed ACK controllers, but with significant operational advantages.
+For a general comparison of EKS Capabilities vs self-managed solutions, see <<capabilities-considerations>>.
+This topic focuses on ACK-specific differences.
+
+== Differences from upstream ACK
+
+The EKS Capability for ACK is based on upstream ACK controllers but differs in IAM integration.
+
+*IAM Capability Role*: The capability uses a dedicated IAM role with a trust policy that allows the `capabilities.eks.amazonaws.com` service principal, not IRSA (IAM Roles for Service Accounts).
+You can attach IAM policies directly to the Capability Role with no need to create or annotate Kubernetes service accounts or configure OIDC providers.
+A best practice for production use cases is to configure service permissions using `IAMRoleSelector`.
+See <<ack-permissions>> for more details.
+
+*Resource compatibility*: ACK custom resources work identically to upstream ACK with no changes to your ACK resource YAML files.
+The capability uses the same Kubernetes APIs and CRDs, so tools like `kubectl` work the same way.
+All GA controllers and resources from upstream ACK are supported.
+
+For complete ACK documentation and service-specific guides, see the https://aws-controllers-k8s.github.io/community/[ACK documentation^].
+
+
+== Migration path
+
+You can migrate from self-managed ACK to the managed capability with zero downtime:
+
+. Update your self-managed ACK controller to use `kube-system` for leader election leases, for example:
++
+[source,bash]
+----
+helm upgrade --install ack-s3-controller \
+  oci://public.ecr.aws/aws-controllers-k8s/s3-chart \
+  --namespace ack-system \
+  --set leaderElection.namespace=kube-system
+----
++
+This moves the controller's lease to `kube-system`, allowing the managed capability to coordinate with it.
+
+. Create the ACK capability on your cluster (see <<create-ack-capability>>)
+
+. The managed capability recognizes existing ACK-managed {aws} resources and takes over reconciliation
+
+. Gradually scale down or remove self-managed controller deployments:
++
+[source,bash]
+----
+helm uninstall ack-s3-controller --namespace ack-system
+----
+
+This approach allows both controllers to coexist safely during migration.
+The managed capability automatically adopts resources previously managed by self-managed controllers, ensuring continuous reconciliation without conflicts.
+
+== Next steps
+
+* <<create-ack-capability>> - Create an ACK capability resource
+* <<ack-concepts>> - Understand ACK concepts and resource lifecycle
+* <<ack-permissions>> - Configure IAM and permissions

@@ -1,0 +1,184 @@
+include::../attributes.txt[]
+
+[.topic]
+[#ack-troubleshooting]
+= Troubleshoot issues with ACK capabilities
+:info_titleabbrev: Troubleshooting
+
+[abstract]
+--
+Diagnose and resolve common issues with the EKS Capability for ACK.
+--
+
+This topic provides troubleshooting guidance for the EKS Capability for ACK, including capability health checks, resource status verification, and IAM permission issues.
+
+[NOTE]
+====
+EKS Capabilities are fully managed and run outside your cluster.
+You don't have access to controller logs or controller namespaces.
+Troubleshooting focuses on capability health, resource status, and IAM configuration.
+====
+
+== Capability is ACTIVE but resources aren't being created
+
+If your ACK capability shows `ACTIVE` status but resources aren't being created in {aws}, check the capability health, resource status, and IAM permissions.
+
+*Check capability health*:
+
+You can view capability health and status issues in the EKS console or using the {aws} CLI.
+
+*Console*:
+
+. Open the Amazon EKS console at https://console.aws.amazon.com/eks/home#/clusters.
+. Select your cluster name.
+. Choose the *Observability* tab.
+. Choose *Monitor cluster*.
+. Choose the *Capabilities* tab to view health and status for all capabilities.
+
+*{aws} CLI*:
+
+[source,bash]
+----
+# View capability status and health
+aws eks describe-capability \
+  --region region-code \
+  --cluster-name my-cluster \
+  --capability-name my-ack
+
+# Look for issues in the health section
+----
+
+*Common causes*:
+
+* *IAM permissions missing*: The Capability Role lacks permissions for the {aws} service
+* *Wrong namespace*: Resources created in namespace without proper IAMRoleSelector
+* *Invalid resource spec*: Check resource status conditions for validation errors
+* *API throttling*: {aws} API rate limits being hit
+* *Admission webhooks*: Admission webhooks blocking the controller from patching resource status
+
+*Check resource status*:
+
+[source,bash]
+----
+# Describe the resource to see conditions and events
+kubectl describe bucket my-bucket -n default
+
+# Look for status conditions
+kubectl get bucket my-bucket -n default -o jsonpath='{.status.conditions}'
+
+# View resource events
+kubectl get events --field-selector involvedObject.name=my-bucket -n default
+----
+
+*Verify IAM permissions*:
+
+[source,bash,subs="verbatim,quotes"]
+----
+# View the Capability Role's policies
+aws iam list-attached-role-policies --role-name [.replaceable]`my-ack-capability-role`
+aws iam list-role-policies --role-name [.replaceable]`my-ack-capability-role`
+
+# Get specific policy details
+aws iam get-role-policy --role-name [.replaceable]`my-ack-capability-role` --policy-name [.replaceable]`policy-name`
+----
+
+== Resources created in {aws} but not showing in Kubernetes
+
+ACK only tracks resources it creates through Kubernetes manifests.
+To manage existing {aws} resources with ACK, use the adoption feature.
+
+[source,yaml]
+----
+apiVersion: s3.services.k8s.aws/v1alpha1
+kind: Bucket
+metadata:
+  name: existing-bucket
+  annotations:
+    services.k8s.aws/adoption-policy: "adopt-or-create"
+spec:
+  name: my-existing-bucket-name
+----
+
+For more on resource adoption, see <<ack-concepts>>.
+
+== Cross-account resources not being created
+
+If resources aren't being created in a target {aws} account when using IAM Role Selectors, verify the trust relationship and IAMRoleSelector configuration.
+
+*Verify trust relationship*:
+
+[source,bash,subs="verbatim,quotes"]
+----
+# Check the trust policy in the target account role
+aws iam get-role --role-name [.replaceable]`cross-account-ack-role` --query 'Role.AssumeRolePolicyDocument'
+----
+
+The trust policy must allow the source account's Capability Role to assume it.
+
+*Confirm IAMRoleSelector configuration*:
+
+[source,bash]
+----
+# List IAMRoleSelectors (cluster-scoped)
+kubectl get iamroleselector
+
+# Describe specific selector
+kubectl describe iamroleselector my-selector
+----
+
+*Verify namespace alignment*:
+
+IAMRoleSelectors are cluster-scoped resources but target specific namespaces.
+Ensure your ACK resources are in a namespace that matches the IAMRoleSelector's namespace selector:
+
+[source,bash,subs="verbatim,quotes"]
+----
+# Check resource namespace
+kubectl get bucket [.replaceable]`my-cross-account-bucket` -n [.replaceable]`production`
+
+# List all IAMRoleSelectors (cluster-scoped)
+kubectl get iamroleselector
+
+# Check which namespace the selector targets
+kubectl get iamroleselector [.replaceable]`my-selector` -o jsonpath='{.spec.namespaceSelector}'
+----
+
+*Check IAMRoleSelected condition*:
+
+Verify that the IAMRoleSelector was successfully matched to your resource by checking the `ACK.IAMRoleSelected` condition:
+
+[source,bash,subs="verbatim,quotes"]
+----
+# Check if IAMRoleSelector was matched
+kubectl get bucket [.replaceable]`my-cross-account-bucket` -n [.replaceable]`production` -o jsonpath='{.status.conditions[?(@.type=="ACK.IAMRoleSelected")]}'
+----
+
+If the condition is `False` or missing, the IAMRoleSelector's namespace selector doesn't match the resource's namespace.
+Verify the selector's `namespaceSelector` matches your resource's namespace labels.
+
+*Check Capability Role permissions*:
+
+The Capability Role needs `sts:AssumeRole` permission for the target account role:
+
+[source,json,subs="verbatim,attributes"]
+----
+{
+  "Version": "2012-10-17",{tcx5-waiver}
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "sts:AssumeRole",
+      "Resource": "arn:aws:iam::[.replaceable]`444455556666`:role/[.replaceable]`cross-account-ack-role`"
+    }
+  ]
+}
+----
+
+For detailed cross-account configuration, see <<ack-permissions>>.
+
+== Next steps
+
+* <<ack-considerations>> - ACK considerations and best practices
+* <<ack-permissions>> - Configure IAM permissions and multi-account patterns
+* <<ack-concepts>> - Understand ACK concepts and resource lifecycle
+* <<capabilities-troubleshooting>> - General capability troubleshooting guidance

@@ -1,0 +1,255 @@
+include::attributes.txt[]
+
+[#related-projects]
+= Extend Amazon EKS capabilities with open source projects
+:info_titleabbrev: Projects related to Amazon EKS
+
+[abstract]
+--
+Learn how to use open source projects to add features to Amazon EKS for management, networking, machine learning, auto-scaling, monitoring, and CI/CD.
+--
+
+These open-source projects extend the functionality of Kubernetes clusters running on or outside of {aws}, including clusters managed by Amazon EKS.
+
+[#oss-scope]
+== Support for software deployed to EKS
+
+When reviewing the Amazon EKS docs, you'll encounter references to various open-source tools and software throughout our procedures and examples. These tools include the https://github.com/kubernetes-sigs/metrics-server[Kubernetes Metrics Server] and https://cert-manager.io/[Cert Manager.]
+
+Please note that any third-party or open-source software you choose to deploy falls outside the scope of your {aws} Support Agreements.
+A benefit of using Kubernetes is the active open source community.
+We recommend working directly with the relevant open-source communities and project maintainers to establish appropriate support channels for such components.
+For more information, see the https://www.cncf.io/projects/[graduated and incubating projects] associated with the Cloud Native Computing Foundation (CNCF). 
+
+The Kubernetes ecosystem includes numerous projects and components that come with different levels of community support, response times, and intended use cases.
+When implementing these technologies alongside EKS, ensure you understand the support matrix for each component.
+
+{aws} maintains the open-source components we integrate into the EKS control plane.
+This includes our comprehensive security pipeline covering build verification, vulnerability scanning, validation testing, and patch management for all container images and binaries we distribute.
+For example, {aws} is responsible for the https://kubernetes.io/docs/concepts/architecture/#kube-apiserver[Kubernetes API Server].
+The Kubernetes API server is covered by link:eks/sla/["Amazon EKS Service Level Agreement",type="marketing"].
+You can use your link:premiumsupport/plans/["Amazon Web Services Support Plan",type="marketing"] to resolve issues with the Kubernetes API server, or get general guidance. 
+
+You need to carefully review the support offered for various Amazon EKS Add-ons.
+{aws} add-ons are the only type of Amazon EKS add-on that are fully supported by {aws}.
+{aws} Marketplace add-ons are primarily supported by {aws} Partners.
+Community add-ons receive basic lifecycle support from {aws}.
+For more information, see xref:addon-support[add-on Support.]
+
+Every EKS add-on, irrespective of the type, receives basic lifecycle support from EKS including Marketplace add-ons.
+Basic lifecycle support includes installing and uninstalling the add-on.
+For more information on the types of Amazon EKS Add-ons available and the associated levels of support, see xref:addon-support[Scope of Support for Amazon EKS add-ons.]
+To view add-ons fully supported by {aws}, see xref:workloads-add-ons-available-eks[Amazon Web Services add-ons.]
+
+* For more information about our security practices and support boundaries, see xref:security[Security in Amazon EKS.]
+* For more information about community and {aws} marketplace add-ons available through Amazon EKS Add-ons, see xref:addon-support["EKS Add-ons Support",type="documentation"].
+
+[#related-management-tools]
+== Management tools
+
+Related management tools for Amazon EKS and Kubernetes clusters.
+
+[#related-eksctl]
+=== eksctl
+
+`eksctl` is a simple CLI tool for creating clusters on Amazon EKS.
+
+
+
+* https://eksctl.io/[Project URL]
+* https://eksctl.io/[Project documentation]
+* {aws} open source blog: link:opensource/eksctl-eks-cluster-one-command[eksctl: Amazon EKS cluster with one command,type="blog"]
+
+
+[#related-aws-controllers]
+=== {aws} Controllers for Kubernetes
+
+With {aws} Controllers for Kubernetes, you can create and manage {aws} resources directly from your Kubernetes cluster.
+
+Available in <<ack,EKS Capabilities>>.
+
+* https://aws-controllers-k8s.github.io/community/[Project URL]
+* {aws} open source blog: link:opensource/aws-service-operator-kubernetes-available[{aws} service operator for Kubernetes now available,type="blog"]
+
+
+[#related-kro]
+=== kro (Kube Resource Orchestrator)
+
+kro enables you to create custom Kubernetes APIs that compose multiple resources into higher-level abstractions.
+Platform teams can define reusable patterns with guardrails, while application teams use simple, high-level APIs to provision and manage resources.
+
+Available in <<kro,EKS Capabilities>>.
+
+
+* https://kro.run/[Project URL]
+* https://kro.run/docs/[Project documentation]
+
+
+[#related-argocd]
+=== Argo CD
+
+Argo CD is a declarative, GitOps continuous delivery tool for Kubernetes.
+It continuously monitors your Git repositories and automatically syncs changes to your clusters.
+
+Available in <<argocd,EKS Capabilities>>.
+
+
+* https://argo-cd.readthedocs.io/[Project URL]
+* https://argo-cd.readthedocs.io/en/stable/[Project documentation]
+
+
+[#related-flux-cd]
+=== Flux CD
+
+Flux is a tool that you can use to manage your cluster configuration using Git.
+It uses an operator in the cluster to trigger deployments inside of Kubernetes.
+For more information about operators, see https://operatorhub.io/[OperatorHub.io] on GitHub.
+
+
+
+* https://fluxcd.io/[Project URL]
+* https://docs.fluxcd.io/[Project documentation]
+
+
+[#related-cdk]
+=== CDK for Kubernetes
+
+With the CDK for Kubernetes (cdk8s), you can define Kubernetes apps and components using familiar programming languages.
+cdk8s apps synthesize into standard Kubernetes manifests, which can be applied to any Kubernetes cluster.
+
+
+
+* https://cdk8s.io/[Project URL]
+* https://cdk8s.io/docs/latest/[Project documentation]
+* {aws} containers blog: link:containers/introducing-cdk8s-intent-driven-apis-for-kubernetes-objects[Introducing cdk8s+: Intent-driven APIs for Kubernetes objects,type="blog"]
+
+
+[#related-networking]
+== Networking
+
+Related networking projects for Amazon EKS and Kubernetes clusters.
+
+[#related-vpc-cni-k8s]
+=== Amazon VPC CNI plugin for Kubernetes
+
+Amazon EKS supports native VPC networking through the Amazon VPC CNI plugin for Kubernetes.
+The plugin assigns an IP address from your VPC to each Pod.
+
+
+
+* https://github.com/aws/amazon-vpc-cni-k8s[Project URL]
+* https://github.com/aws/amazon-vpc-cni-k8s/blob/master/README.md[Project documentation]
+
+
+[#related-alb-ingress-controller]
+=== {aws} Load Balancer Controller for Kubernetes
+
+The {aws} Load Balancer Controller helps manage {aws} Elastic Load Balancers for a Kubernetes cluster.
+It satisfies Kubernetes Ingress resources by provisioning {aws} Application Load Balancers.
+It satisfies Kubernetes service resources by provisioning {aws} Network Load Balancers.
+
+
+
+* https://github.com/kubernetes-sigs/aws-load-balancer-controller[Project URL]
+* https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/[Project documentation]
+
+
+[#related-externaldns]
+=== ExternalDNS
+
+ExternalDNS synchronizes exposed Kubernetes services and ingresses with DNS providers including Amazon Route 53 and {aws} Service Discovery.
+
+
+
+* https://github.com/kubernetes-incubator/external-dns[Project URL]
+* https://github.com/kubernetes-incubator/external-dns/blob/master/docs/tutorials/aws.md[Project documentation]
+
+
+[#related-machine-learning]
+== Machine learning
+
+Related machine learning projects for Amazon EKS and Kubernetes clusters.
+
+[#related-kubeflow]
+=== Kubeflow
+
+A machine learning toolkit for Kubernetes.
+
+
+
+* https://www.kubeflow.org/[Project URL]
+* https://www.kubeflow.org/docs/[Project documentation]
+* {aws} open source blog: link:opensource/kubeflow-amazon-eks[Kubeflow on Amazon EKS,type="blog"]
+
+
+[#related-auto-scaling]
+== Auto Scaling
+
+Related auto scaling projects for Amazon EKS and Kubernetes clusters.
+
+[#related-cluster-autoscaler]
+=== Cluster autoscaler
+
+Cluster Autoscaler is a tool that automatically adjusts the size of the Kubernetes cluster based on CPU and memory pressure.
+
+
+
+* https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler[Project URL]
+* https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/cloudprovider/aws/README.md[Project documentation]
+* Amazon EKS workshop: https://www.eksworkshop.com/docs/autoscaling/compute/cluster-autoscaler/[Cluster Autoscaler]
+
+
+[#related-karpenter]
+=== Karpenter
+
+Karpenter is a Kubernetes Node Autoscaler built for flexibility, performance, and simplicity.
+
+
+
+* https://github.com/kubernetes-sigs/karpenter[Project URL]
+* https://karpenter.sh/[Project documentation]
+* Amazon EKS workshop: https://www.eksworkshop.com/docs/autoscaling/compute/karpenter/[Karpenter]
+
+
+[#related-escalator]
+=== Escalator
+
+Escalator is a batch or job optimized horizontal autoscaler for Kubernetes.
+
+
+
+* https://github.com/atlassian/escalator[Project URL]
+* https://github.com/atlassian/escalator/blob/master/docs/README.md[Project documentation]
+
+
+[#related-monitoring]
+== Monitoring
+
+Related monitoring projects for Amazon EKS and Kubernetes clusters.
+
+[#related-prometheus]
+=== Prometheus
+
+Prometheus is an open-source systems monitoring and alerting toolkit.
+
+
+
+* https://prometheus.io/[Project URL]
+* https://prometheus.io/docs/introduction/overview/[Project documentation]
+* Amazon EKS workshop: https://eksworkshop.com/intermediate/240_monitoring/[https://eksworkshop.com/intermediate/240_monitoring/]
+
+
+[#related-cicd]
+== Continuous integration / continuous deployment
+
+Related imperative CI/CD projects for Amazon EKS and Kubernetes clusters.
+
+[#related-jenkinsx]
+=== Jenkins X
+
+CI/CD solution for modern cloud applications on Amazon EKS and Kubernetes clusters.
+
+
+
+* https://jenkins-x.io/[Project URL]
+* https://jenkins-x.io/docs/[Project documentation]

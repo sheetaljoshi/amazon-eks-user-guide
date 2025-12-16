@@ -1,0 +1,193 @@
+include::../attributes.txt[]
+
+[.topic]
+[#capabilities]
+= EKS Capabilities
+:info_titleabbrev: EKS Capabilities
+
+[abstract]
+--
+Accelerate developer velocity and simplify Kubernetes operations with fully managed capabilities that run in EKS.
+--
+
+[TIP]
+====
+Get started: <<create-ack-capability,Create ACK capability>> | <<create-argocd-capability,Create Argo CD capability>> | <<create-kro-capability,Create kro capability>>
+====
+
+Amazon EKS Capabilities is a layered set of fully managed cluster features that help accelerate developer velocity and offload the complexity of building and scaling with Kubernetes.
+EKS Capabilities are Kubernetes-native features for declarative continuous deployment, {aws} resource management, and Kubernetes resource authoring and orchestration, all fully managed by {aws}.
+With EKS Capabilities, you can focus more on building and scaling your workloads, offloading the operational burden of these foundational platform services to {aws}.
+These capabilities run within EKS rather than in your clusters, eliminating the need to install, maintain, and scale critical platform components on your worker nodes.
+
+To get started, you can create one or more EKS Capabilities on a new or existing EKS cluster. 
+To do this, you can use the {aws} CLI, the {aws-management-console}, EKS APIs, eksctl, or your preferred infrastructure-as-code tools. 
+While EKS Capabilities are designed to work together, they are independent cloud resources that you can pick and choose based on your use case and requirements. 
+
+All Kubernetes versions supported by EKS are supported for EKS Capabilities.
+
+[NOTE]
+====
+EKS Capabilities are available in all {aws} commercial Regions where Amazon EKS is available.
+For a list of supported Regions, see link:general/latest/gr/eks.html[Amazon EKS endpoints and quotas,type="documentation"] in the {aws} General Reference.
+====
+
+== Available Capabilities
+
+=== {aws} Controllers for Kubernetes (ACK)
+
+ACK enables the management of {aws} resources using Kubernetes APIs, allowing you to create and manage S3 buckets, RDS databases, IAM roles, and other {aws} resources using Kubernetes custom resources.
+ACK continuously reconciles your desired state with the actual state in {aws}, correcting any drift over time in order to keep your system healthy and your resources configured as specified.
+You can manage {aws} resources alongside your Kubernetes workloads using the same tools and workflows, with support for more than 50 {aws} services including S3, RDS, DynamoDB, and Lambda.
+ACK supports cross-account and cross-region resource management, enabling complex multi-account, multi-cluster system management architectures.
+ACK supports read-only resources and read-only adoption, facilitating migration from other infrastructure as code tools into your Kubernetes-based systems.
+
+<<ack,Learn more about ACK →>>
+
+=== Argo CD
+
+Argo CD implements GitOps-based continuous deployment for your applications, using Git repositories as the source of truth for your workloads and system state.
+Argo CD automatically syncs application resources to your clusters from your Git repositories, detecting and remediating drift to ensure your deployed applications match your desired state.
+You can deploy and manage applications across multiple clusters from a single Argo CD instance, with automated deployment from Git repositories whenever changes are committed.
+Using Argo CD and ACK together provides a foundational GitOps system, simplifying workload dependency management as well as supporting whole-system designs including cluster and infrastructure management at scale.
+Argo CD integrates with {aws} Identity Center for authentication and authorization, and provides a hosted Argo UI for visualizing application health and deployment status.
+
+<<argocd,Learn more about Argo CD →>>
+
+=== kro (Kube Resource Orchestrator)
+
+kro enables you to create custom Kubernetes APIs that compose multiple resources into higher-level abstractions, allowing platform teams to define reusable patterns for common resource combinations-cloud building blocks.
+With kro, you can compose both Kubernetes and {aws} resources together into unified abstractions, using simple syntax to enable dynamic configurations and conditional logic.
+kro enables platform teams to provide self-service capabilities with appropriate guardrails, allowing developers to provision complex infrastructure using simple, purpose-built APIs while maintaining organizational standards and best practices.
+kro resources are simply Kubernetes resources, and are specified in Kubernetes manifests which can be stored in Git, or pushed to OCI-compatible registries like Amazon ECR for broad organizational distribution.
+
+<<kro,Learn more about kro →>>
+
+== Benefits of EKS Capabilities
+
+EKS Capabilities are fully managed by {aws}, eliminating the need for installation, maintenance, and scaling of foundational cluster services.
+{aws} handles security patching, updates, and operational management, freeing your teams to focus on building with {aws} rather than on cluster operations.
+Unlike traditional Kubernetes add-ons that consume cluster resources, capabilities run in EKS rather than on your worker nodes.
+This frees up cluster capacity and resources for your workloads while minimizing the operational burden of managing in-cluster controllers and other platform components.
+
+With EKS Capabilities, you can manage deployments, {aws} resources, custom Kubernetes resources, and compositions using native Kubernetes APIs and tools like `kubectl`.
+All capabilities operate in the context of your clusters, automatically detecting and correcting configuration drift in both application and cloud infrastructure resources.
+You can deploy and manage resources across multiple clusters, {aws} accounts, and regions from a single control point, simplifying operations in complex, distributed environments.
+
+EKS Capabilities are designed for GitOps workflows, providing declarative, version-controlled infrastructure and application management.
+Changes flow from Git through the system, providing audit trails, rollback capabilities, and collaboration workflows that integrate with your existing development practices.
+This Kubernetes-native approach means you don't need to use multiple tools or manage infrastructure-as-code systems external to your clusters, and there is a single source of truth to refer to.
+Your desired state, defined in version-controlled Kubernetes declarative configuration, is continuously enforced across your environment.
+
+
+== Pricing
+
+With EKS Capabilities, there are no upfront commitments or minimum fees.
+You are charged for each capability resource for each hour it is active on your Amazon EKS cluster.
+Specific Kubernetes resources managed by EKS Capabilities are also billed at an hourly rate.
+
+For current pricing information, see the https://aws.amazon.com/eks/pricing/[Amazon EKS pricing page^].
+
+[TIP]
+====
+You can use {aws} Cost Explorer and Cost and Usage Reports to track capability costs separately from other EKS charges.
+You can tag your capabilities with cluster name, capability type, and other details for cost allocation purposes.
+====
+
+== How EKS Capabilities Work
+
+Each capability is an {aws} resource that you create on your EKS cluster.
+Once created, the capability runs in EKS and is fully managed by {aws}.
+
+[NOTE]
+====
+You can create one capability resource of each type (Argo CD, ACK, and kro) for a given cluster.
+You cannot create multiple capability resources of the same type on the same cluster.
+====
+
+You interact with capabilities in your cluster using standard Kubernetes APIs and tools:
+
+* Use `kubectl` to apply Kubernetes custom resources
+* Use Git repositories as the source of truth for GitOps workflows
+
+Some capabilities have additional tools supported. For example:
+
+* Use the Argo CD CLI to configure and manage repositories and clusters in your Argo CD capability
+* Use the Argo CD UI to visualize and manage applications managed by your Argo CD capability
+
+Capabilities are designed to work together but are independent and fully opt-in.
+You can enable one, two, or all three capabilities based on your needs, and update your configuration as your requirements evolve.
+
+All EKS Compute types are supported for use with EKS Capabilities. For more information, see <<eks-compute>>.
+
+For security configuration and details on IAM roles, see <<capabilities-security>>.
+For multi-cluster architecture patterns, see <<capabilities-considerations>>.
+
+== Common Use Cases
+
+*GitOps for Applications and Infrastructure*
+
+Use Argo CD to deploy applications and operational components and ACK to manage cluster configurations and provision infrastructure, both from Git repositories.
+Your entire stack—applications, databases, storage, and networking—is defined as code and automatically deployed.
+
+Example: A development team pushes changes to Git.
+Argo CD deploys the updated application, and ACK provisions a new RDS database with the correct configuration.
+All changes are auditable, reversible, and consistent across environments.
+
+*Platform Engineering with Self-Service*
+
+Use kro to create custom APIs that compose ACK and Kubernetes resources.
+Platform teams define approved patterns with guardrails.
+Application teams use simple, high-level APIs to provision complete stacks.
+
+Example: A platform team creates a "WebApplication" API that provisions a Deployment, Service, Ingress, and S3 bucket.
+Developers use this API without needing to understand the underlying complexity or {aws} permissions.
+
+*Multi-Cluster Application Management*
+
+Use Argo CD to deploy applications across multiple EKS clusters in different regions or accounts.
+Manage all deployments from a single Argo CD instance with consistent policies and workflows.
+
+Example: Deploy the same application to development, staging, and production clusters across multiple regions.
+Argo CD ensures each environment stays in sync with its corresponding Git branch.
+
+*Multi-Cluster Management*
+
+Use ACK to define and provision EKS clusters, kro to customize cluster configurations with organizational standards, and Argo CD to manage cluster lifecycle and configuration.
+This provides end-to-end cluster management from creation through ongoing operations.
+
+Example: Define EKS clusters using ACK and kro to provision and manage cluster infrastructure, defining organizational standards for networking, security policies, add-ons and other configuration.
+Use Argo CD to create and continuously manage clusters, configuration, and Kubernetes version updates across your fleet leveraging consistent standards and automated lifecycle management.
+
+*Migrations and Modernization*
+
+Simplify migration to EKS with native cloud resource provisioning and GitOps workflows.
+Use ACK to adopt existing {aws} resources without recreating them, and Argo CD to operationalize workload deployments from Git.
+
+Example: A team migrating from EC2 to EKS adopts their existing RDS databases and S3 buckets using ACK, then uses Argo CD to deploy containerized applications from Git.
+The migration path is clear, and operations are standardized from day one.
+
+*Account and Regional Bootstrapping*
+
+Automate infrastructure rollout across accounts and regions using Argo CD and ACK together.
+Define your infrastructure as code in Git, and let capabilities handle the deployment and management.
+
+Example: A platform team maintains Git repositories defining standard account configurations—VPCs, IAM roles, RDS instances, and monitoring stacks.
+Argo CD deploys these configurations to new accounts and regions automatically, ensuring consistency and reducing manual setup time from days to minutes.
+
+
+include::working-with-capabilities.adoc[leveloffset=+1]
+
+include::capability-kubernetes-resources.adoc[leveloffset=+1]
+
+include::capabilities-considerations.adoc[leveloffset=+1]
+
+include::ack.adoc[leveloffset=+1]
+
+include::argocd.adoc[leveloffset=+1]
+
+include::kro.adoc[leveloffset=+1]
+
+include::capabilities-troubleshooting.adoc[leveloffset=+1]
+
+

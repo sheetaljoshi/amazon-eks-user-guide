@@ -1,0 +1,213 @@
+include::../../attributes.txt[]
+
+[.topic]
+[#capability-role]
+= Amazon EKS capability IAM role
+:info_titleabbrev: Capability IAM role
+
+[abstract]
+--
+Learn how to create and configure the required {aws} Identity and Access Management role for Amazon EKS capabilities to manage {aws} resources and access Kubernetes resources.
+--
+
+EKS Capabilities require a capability IAM role (or capability role) to be configured.
+Capabilities use this role to perform actions on {aws} services and to access Kubernetes resources in your cluster through automatically created access entries.
+
+Before you can specify a capability role during capability creation, you must create the IAM role with the appropriate trust policy and permissions for the capability type.
+Once this IAM role is created, it can be reused for any number of capability resources.
+
+== Capability role requirements
+
+The capability role must meet the following requirements:
+
+* The role must be in the same {aws} account as the cluster and capability resource
+* The role must have a trust policy that allows the EKS capabilities service to assume the role
+* The role must have permissions appropriate for the capability type and use case requirements (see <<capability-permissions>>)
+
+[#capability-trust-policy]
+== Trust policy for capability roles
+
+All capability roles must include the following trust policy:
+
+[source,json,subs="verbatim,attributes"]
+----
+{
+  "Version": "2012-10-17",{tcx5-waiver}
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "capabilities.eks.amazonaws.com"
+      },
+      "Action": [
+        "sts:AssumeRole",
+        "sts:TagSession"
+      ]
+    }
+  ]
+}
+----
+
+This trust policy allows EKS to:
+
+* Assume the role to perform {aws} API operations
+* Tag sessions for audit and tracking purposes
+
+[#capability-permissions]
+== Permissions by capability type
+
+The IAM permissions required depend on which capability you're using and your deployment model.
+
+[NOTE]
+====
+For production deployments using IAM Role Selectors with ACK, or when using kro or Argo CD without {aws} service integration, the Capability Role may not require any IAM permissions beyond the trust policy.
+====
+
+*kro (Kube Resource Orchestrator)*:: No IAM permissions are required. You can create a capability role with no attached policies. kro only requires Kubernetes RBAC permissions to create and manage Kubernetes resources.
+
+*{aws} Controllers for Kubernetes (ACK)*:: ACK supports two permission models:
++
+* *Simple setup (development/testing)*: Add {aws} service permissions directly to the Capability Role. This works well for getting started, single-account deployments, or when all users need the same permissions.
++
+* *Production best practice*: Use IAM Role Selectors to implement least-privilege access. With this approach, the Capability Role only needs `sts:AssumeRole` permission to assume service-specific roles. You don't add {aws} service permissions (like S3 or RDS) to the Capability Role itself—those permissions are granted to individual IAM roles that are mapped to specific namespaces.
++
+IAM Role Selectors enable:
++
+** Namespace-level permission isolation
+** Cross-account resource management
+** Team-specific IAM roles
+** Least-privilege security model
++
+Example Capability Role policy for IAM Role Selector approach:
++
+[source,json,subs="verbatim,attributes"]
+----
+{
+  "Version": "2012-10-17",{tcx5-waiver}
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "sts:AssumeRole",
+      "Resource": [
+        "arn:aws:iam::111122223333:role/ACK-S3-Role",
+        "arn:aws:iam::111122223333:role/ACK-RDS-Role",
+        "arn:aws:iam::444455556666:role/ACKCrossAccountRole"
+      ]
+    }
+  ]
+}
+----
++
+For detailed ACK permission configuration including IAM Role Selectors, see <<ack-permissions>>.
+
+*Argo CD*:: No IAM permissions required by default. Optional permissions may be needed for:
++
+* *{aws} Secrets Manager*: If using Secrets Manager to store Git repository credentials
+* *{aws} CodeConnections*: If using CodeConnections for Git repository authentication
++
+Example policy for Secrets Manager and CodeConnections:
++
+[source,json,subs="verbatim,attributes"]
+----
+{
+  "Version": "2012-10-17",{tcx5-waiver}
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:DescribeSecret"
+      ],
+      "Resource": "arn:aws:secretsmanager:region:account-id:secret:argocd/*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "codeconnections:UseConnection",
+        "codeconnections:GetConnection"
+      ],
+      "Resource": "arn:aws:codeconnections:region:account-id:connection/*"
+    }
+  ]
+}
+----
++
+For detailed Argo CD permission requirements, see <<argocd-considerations>>.
+
+
+[#check-capability-role]
+== Check for an existing capability role
+
+You can use the following procedure to check if your account already has a capability IAM role suitable for your use case.
+
+. Open the IAM console at https://console.aws.amazon.com/iam/.
+. In the left navigation pane, choose *Roles*.
+. Search the list of roles for your capability role name (for example, `ACKCapabilityRole` or `ArgoCDCapabilityRole`).
+. If a role exists, select it to view the attached policies and trust relationship.
+. Choose *Trust relationships*, and then choose *Edit trust policy*.
+. Verify that the trust relationship matches the <<capability-trust-policy,capability trust policy>>. If it doesn't match, update the trust policy.
+. Choose *Permissions* and verify that the role has the appropriate permissions for your capability type and use case.
+
+[#create-capability-role]
+== Creating a capability IAM role
+
+You can use the {aws-management-console} or the {aws} CLI to create a capability role.
+
+**{aws-management-console}**::
+.. Open the IAM console at https://console.aws.amazon.com/iam/.
+.. Choose *Roles*, then *Create role*.
+.. Under *Trusted entity type*, select *Custom trust policy*.
+.. Copy and paste the <<capability-trust-policy,capability trust policy>> into the trust policy editor.
+.. Choose *Next*.
+.. On the *Add permissions* tab, select or create policies appropriate for your capability type (see <<capability-permissions>>). For kro, you can skip this step.
+.. Choose *Next*.
+.. For *Role name*, enter a unique name for your role, such as `ACKCapabilityRole`, `ArgoCDCapabilityRole`, or `kroCapabilityRole`.
+.. For *Description*, enter descriptive text such as `Amazon EKS - ACK capability role`.
+.. Choose *Create role*.
+
+**{aws} CLI**::
+.. Copy the <<capability-trust-policy,capability trust policy>> to a file named `capability-trust-policy.json`.
+.. Create the role. Replace `ACKCapabilityRole` with your desired role name.
++
+[source,bash]
+----
+aws iam create-role \
+  --role-name ACKCapabilityRole \
+  --assume-role-policy-document file://capability-trust-policy.json
+----
+.. Attach the required IAM policies to the role. For ACK, attach policies for the {aws} services you want to manage. For Argo CD, attach policies for Secrets Manager or CodeConnections if needed. For kro, you can skip this step.
++
+Example for ACK with S3 permissions:
++
+[source,bash]
+----
+aws iam put-role-policy \
+  --role-name ACKCapabilityRole \
+  --policy-name S3Management \
+  --policy-document file://s3-policy.json
+----
+
+[#troubleshooting-capability-role]
+== Troubleshooting capability role issues
+
+*Capability creation fails with "Invalid IAM role"*::
+Verify that:
++
+* The role exists in the same account as the cluster
+* The trust policy matches the <<capability-trust-policy,capability trust policy>>
+* You have `iam:PassRole` permission for the role
+
+*Capability shows permission errors*::
+Verify that:
++
+* The role has the necessary IAM permissions for the capability type
+* The access entry exists on the cluster for the role
+* Additional Kubernetes permissions are configured if required (see <<additional-kubernetes-permissions>>)
+
+*ACK resources fail with "permission denied" errors*::
+Verify that:
++
+* The role has the necessary IAM permissions for your use case
+* For ACK controllers that reference secrets, ensure you've associated the `AmazonEKSSecretReaderPolicy` access entry policy scoped to the appropriate namespaces.
+
+For more troubleshooting guidance, see <<capabilities-security>>.

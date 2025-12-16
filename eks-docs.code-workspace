@@ -1,0 +1,34 @@
+{
+	"folders": [
+		{
+			"name": "📦 AmazonEKSDocs",
+			"path": "."
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"*.adoc": "asciidoc"
+		},
+		"editor.wordWrap": "wordWrapColumn",
+		"editor.wordWrapColumn": 80,
+		"[asciidoc]": {
+			"editor.wordWrap": "wordWrapColumn",
+			"editor.wordWrapColumn": 80,
+			"editor.formatOnSave": true,
+			"editor.tabSize": 2,
+			"editor.insertSpaces": true,
+			"editor.rulers": [80]
+		},
+		"asciidoc.preview.scrollPreviewWithEditor": true,
+		"asciidoc.preview.scrollEditorWithPreview": true,
+		"asciidoc.antora.showEnableAntoraPrompt": false
+		// vale extension 0.30.0+ requires an absolute path to the .vale.ini, can't find in the workspace root
+		// "vale.valeCLI.config": ""
+	},
+	"extensions": {
+		"recommendations": [
+			"asciidoctor.asciidoctor-vscode"
+		]
+	}
+}
+

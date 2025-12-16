@@ -1,0 +1,78 @@
+include::../attributes.txt[]
+
+[.topic]
+[#argocd-create-console]
+= Create an Argo CD capability using the Console
+:info_titleabbrev: Console
+
+This topic describes how to create an Argo CD capability using the {aws-management-console}.
+
+== Prerequisites
+
+* *{aws} Identity Center configured* – Argo CD requires {aws} Identity Center for authentication. Local users are not supported. If you don't have {aws} Identity Center set up, see link:singlesignon/latest/userguide/getting-started.html[Getting started with {aws} Identity Center,type="documentation"] to create an Identity Center instance, and link:singlesignon/latest/userguide/addusers.html[Add users,type="documentation"] and link:singlesignon/latest/userguide/addgroups.html[Add groups,type="documentation"] to create users and groups for Argo CD access.
+
+== Create the Argo CD capability
+
+. Open the Amazon EKS console at https://console.aws.amazon.com/eks/home#/clusters.
+
+. Select your cluster name to open the cluster detail page.
+
+. Choose the *Capabilities* tab.
+
+. In the left navigation, choose *Argo CD*.
+
+. Choose *Create Argo CD capability*.
+
+. For *IAM Capability Role*:
++
+* If you already have an IAM Capability Role, select it from the dropdown
+* If you need to create a role, choose *Create Argo CD role*
++
+This opens the IAM console in a new tab with pre-populated trust policy and full read access to Secrets Manager.
+No other permissions are added by default, but you can add them if needed.
+If you plan to use CodeCommit repositories or other {aws} services, add the appropriate permissions before creating the role.
++
+After creating the role, return to the EKS console and the role will be automatically selected.
++
+[NOTE]
+====
+If you plan to use the optional integrations with {aws} Secrets Manager or {aws} CodeConnections, you'll need to add permissions to the role.
+For IAM policy examples and configuration guidance, see <<integration-secrets-manager>> and <<integration-codeconnections>>.
+====
+
+. Configure {aws} Identity Center integration:
++
+.. Select *Enable {aws} Identity Center integration*.
+.. Choose your Identity Center instance from the dropdown.
+.. Configure role mappings for RBAC by assigning users or groups to Argo CD roles (ADMIN, EDITOR, or VIEWER)
+
+. Choose *Create*.
+
+The capability creation process begins.
+
+== Verify the capability is active
+
+. On the *Capabilities* tab, view the Argo CD capability status.
+
+. Wait for the status to change from `CREATING` to `ACTIVE`.
+
+. Once active, the capability is ready to use.
+
+For information about capability statuses and troubleshooting, see <<working-with-capabilities>>.
+
+== Access the Argo CD UI
+
+After the capability is active, you can access the Argo CD UI:
+
+. On the Argo CD capability page, choose *Open Argo CD UI*.
+
+. The Argo CD UI opens in a new browser tab.
+
+. You can now create Applications and manage deployments through the UI.
+
+== Next steps
+
+* <<working-with-argocd>> - Configure repositories, register clusters, and create Applications
+
+* <<argocd-considerations>> - Multi-cluster architecture and advanced configuration
+* <<working-with-capabilities>> - Manage your Argo CD capability resource

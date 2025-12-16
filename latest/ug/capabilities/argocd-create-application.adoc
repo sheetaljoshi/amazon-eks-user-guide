@@ -1,0 +1,372 @@
+include::../attributes.txt[]
+
+[.topic]
+[#argocd-create-application]
+= Create Applications
+:info_titleabbrev: Create Applications
+
+[abstract]
+--
+Create Argo CD Applications to deploy from Git repositories with automated or manual sync.
+--
+
+Applications represent deployments in target clusters.
+Each Application defines a source (Git repository) and destination (cluster and namespace).
+When applied, Argo CD will create the resources specified by manifests in the Git repository to the namespace in the cluster.
+Applications often specify workload deployments, but they can manage any Kubernetes resources available in the destination cluster.
+
+== Prerequisites
+
+* An EKS cluster with the Argo CD capability created
+* Repository access configured (see <<argocd-configure-repositories>>)
+* Target cluster registered (see <<argocd-register-clusters>>)
+* `kubectl` configured to communicate with your cluster
+
+== Create a basic Application
+
+Define an Application that deploys from a Git repository:
+
+[source,yaml]
+----
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: guestbook
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/argoproj/argocd-example-apps
+    targetRevision: HEAD
+    path: guestbook
+  destination:
+    server: arn:aws:eks:us-west-2:111122223333:cluster/my-cluster
+    namespace: default
+----
+
+[IMPORTANT]
+====
+Use the EKS cluster ARN in the `destination.server` field, not the Kubernetes API server URL.
+The managed capability requires ARNs to identify clusters.
+====
+
+Apply the Application:
+
+[source,bash]
+----
+kubectl apply -f application.yaml
+----
+
+View the Application status:
+
+[source,bash]
+----
+kubectl get application guestbook -n argocd
+----
+
+== Source configuration
+
+*Git repository*:
+
+[source,yaml]
+----
+spec:
+  source:
+    repoURL: https://github.com/example/my-app
+    targetRevision: main
+    path: kubernetes/manifests
+----
+
+*Specific Git tag or commit*:
+
+[source,yaml]
+----
+spec:
+  source:
+    targetRevision: v1.2.0  # or commit SHA
+----
+
+*Helm chart*:
+
+[source,yaml]
+----
+spec:
+  source:
+    repoURL: https://github.com/example/helm-charts
+    targetRevision: main
+    path: charts/my-app
+    helm:
+      valueFiles:
+      - values.yaml
+      parameters:
+      - name: image.tag
+        value: v1.2.0
+----
+
+*Helm chart from ECR*:
+
+[source,yaml,subs="verbatim,quotes"]
+----
+spec:
+  source:
+    repoURL: oci://[.replaceable]`account-id`.dkr.ecr.[.replaceable]`region`.amazonaws.com/[.replaceable]`repository-name`
+    targetRevision: [.replaceable]`chart-version`
+    chart: [.replaceable]`chart-name`
+----
+
+If the Capability Role has the required ECR permissions, the repository is used directly and no Repository configuration is required.
+See <<argocd-configure-repositories>> for details.
+
+*Git repository from CodeCommit*:
+
+[source,yaml,subs="verbatim,quotes"]
+----
+spec:
+  source:
+    repoURL: https://git-codecommit.[.replaceable]`region`.amazonaws.com/v1/repos/[.replaceable]`repository-name`
+    targetRevision: main
+    path: kubernetes/manifests
+----
+
+If the Capability Role has the required CodeCommit permissions, the repository is used directly and no Repository configuration is required.
+See <<argocd-configure-repositories>> for details.
+
+*Git repository from CodeConnections*:
+
+[source,yaml,subs="verbatim,quotes"]
+----
+spec:
+  source:
+    repoURL: https://codeconnections.[.replaceable]`region`.amazonaws.com/git-http/[.replaceable]`account-id`/[.replaceable]`region`/[.replaceable]`connection-id`/[.replaceable]`owner`/[.replaceable]`repository`.git
+    targetRevision: main
+    path: kubernetes/manifests
+----
+
+The repository URL format is derived from the CodeConnections connection ARN.
+If the Capability Role has the required CodeConnections permissions and a connection is configured, the repository is used directly and no Repository configuration is required.
+See <<argocd-configure-repositories>> for details.
+
+*Kustomize*:
+
+[source,yaml]
+----
+spec:
+  source:
+    repoURL: https://github.com/example/kustomize-app
+    targetRevision: main
+    path: overlays/production
+    kustomize:
+      namePrefix: prod-
+----
+
+== Sync policies
+
+Control how Argo CD syncs applications.
+
+*Manual sync (default)*:
+
+Applications require manual approval to sync:
+
+[source,yaml]
+----
+spec:
+  syncPolicy: {}  # No automated sync
+----
+
+Manually trigger sync:
+
+[source,bash]
+----
+kubectl patch application guestbook -n argocd \
+  --type merge \
+  --patch '{"operation": {"initiatedBy": {"username": "admin"}, "sync": {}}}'
+----
+
+*Automatic sync*:
+
+Applications automatically sync when Git changes are detected:
+
+[source,yaml]
+----
+spec:
+  syncPolicy:
+    automated: {}
+----
+
+*Self-healing*:
+
+Automatically revert manual changes to the cluster:
+
+[source,yaml]
+----
+spec:
+  syncPolicy:
+    automated:
+      selfHeal: true
+----
+
+When enabled, Argo CD reverts any manual changes made directly to the cluster, ensuring Git remains the source of truth.
+
+*Pruning*:
+
+Automatically delete resources removed from Git:
+
+[source,yaml]
+----
+spec:
+  syncPolicy:
+    automated:
+      prune: true
+----
+
+[WARNING]
+====
+Pruning will delete resources from your cluster.
+Use with caution in production environments.
+====
+
+*Combined automated sync*:
+
+[source,yaml]
+----
+spec:
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
+----
+
+== Sync options
+
+Additional sync configuration:
+
+*Create namespace if it doesn't exist*:
+
+[source,yaml]
+----
+spec:
+  syncPolicy:
+    syncOptions:
+    - CreateNamespace=true
+----
+
+*Validate resources before applying*:
+
+[source,yaml]
+----
+spec:
+  syncPolicy:
+    syncOptions:
+    - Validate=true
+----
+
+*Apply out of sync only*:
+
+[source,yaml]
+----
+spec:
+  syncPolicy:
+    syncOptions:
+    - ApplyOutOfSyncOnly=true
+----
+
+== Advanced sync features
+
+Argo CD supports advanced sync features for complex deployments:
+
+* *Sync waves* - Control resource creation order with `argocd.argoproj.io/sync-wave` annotations
+* *Sync hooks* - Run jobs before or after sync with `argocd.argoproj.io/hook` annotations (PreSync, PostSync, SyncFail)
+* *Resource health assessment* - Custom health checks for application-specific resources
+
+For details, see link:https://argo-cd.readthedocs.io/en/stable/user-guide/sync-waves/[Sync Waves] and link:https://argo-cd.readthedocs.io/en/stable/user-guide/resource_hooks/[Resource Hooks] in the Argo CD documentation.
+
+== Ignore differences
+
+Prevent Argo CD from syncing specific fields that are managed by other controllers (like HPA managing replicas):
+
+[source,yaml]
+----
+spec:
+  ignoreDifferences:
+  - group: apps
+    kind: Deployment
+    jsonPointers:
+    - /spec/replicas
+----
+
+For details on ignore patterns and field exclusions, see link:https://argo-cd.readthedocs.io/en/stable/user-guide/diffing/[Diffing Customization] in the Argo CD documentation.
+
+== Multi-environment deployment
+
+Deploy the same application to multiple environments:
+
+*Development*:
+
+[source,yaml]
+----
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: my-app-dev
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/example/my-app
+    targetRevision: develop
+    path: overlays/development
+  destination:
+    server: arn:aws:eks:us-west-2:111122223333:cluster/dev-cluster
+    namespace: my-app
+----
+
+*Production*:
+
+[source,yaml]
+----
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: my-app-prod
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/example/my-app
+    targetRevision: main
+    path: overlays/production
+  destination:
+    server: arn:aws:eks:us-west-2:111122223333:cluster/prod-cluster
+    namespace: my-app
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+----
+
+== Monitor and manage Applications
+
+*View Application status*:
+
+[source,bash]
+----
+kubectl get application my-app -n argocd
+----
+
+*Access the Argo CD UI*:
+
+Open the Argo CD UI through the EKS console to view application topology, sync status, resource health, and deployment history.
+See <<working-with-argocd>> for UI access instructions.
+
+*Rollback Applications*:
+
+Rollback to a previous revision using the Argo CD UI or by updating the `targetRevision` in the Application spec to a previous Git commit or tag.
+
+== Additional resources
+
+* <<argocd-projects>> - Organize applications with Projects for multi-tenant environments
+* <<argocd-applicationsets>> - Deploy to multiple clusters with templates
+* link:https://argo-cd.readthedocs.io/en/stable/user-guide/application-specification/[Application Specification^] - Complete Application API reference
+* link:https://argo-cd.readthedocs.io/en/stable/user-guide/sync-options/[Sync Options^] - Advanced sync configuration

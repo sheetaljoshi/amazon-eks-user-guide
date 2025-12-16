@@ -1,0 +1,15 @@
+include::../attributes.txt[]
+
+[.topic]
+[#coredns-metrics]
+= Monitor Kubernetes DNS resolution with CoreDNS metrics
+:info_titleabbrev: Monitor DNS resolution
+
+[abstract]
+--
+Learn how to collect CoreDNS metrics in Amazon EKS using Prometheus or CloudWatch Agent, enabling monitoring and observability for your Kubernetes DNS resolution.
+--
+
+CoreDNS as an EKS add-on exposes the metrics from CoreDNS on port `9153` in the Prometheus format in the `kube-dns` service. You can use Prometheus, the Amazon CloudWatch agent, or any other compatible system to scrape (collect) these metrics.
+
+For an example _scrape configuration_ that is compatible with both Prometheus and the CloudWatch agent, see link:AmazonCloudWatch/latest/monitoring/ContainerInsights-Prometheus-Setup-configure.html[CloudWatch agent configuration for Prometheus,type="documentation"] in the _Amazon CloudWatch User Guide_.

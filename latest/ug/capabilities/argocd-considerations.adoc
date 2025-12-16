@@ -1,0 +1,362 @@
+include::../attributes.txt[]
+
+[.topic]
+[#argocd-considerations]
+= Argo CD considerations
+:info_titleabbrev: Argo CD considerations
+
+[abstract]
+--
+Plan your Argo CD deployment, configure IAM permissions, set up authentication with {aws} Identity Center, and enable multi-cluster deployments.
+--
+
+This topic covers important considerations for using the EKS Capability for Argo CD, including planning, permissions, authentication, and multi-cluster deployment patterns.
+
+== Planning
+
+Before deploying Argo CD, consider the following:
+
+*Repository strategy*: Determine where your application manifests will be stored (CodeCommit, GitHub, GitLab, Bitbucket).
+Plan your repository structure and branching strategy for different environments.
+
+*Authentication method*: Decide whether to use {aws} Identity Center for SSO or manage Argo CD users directly.
+SSO is recommended for production environments.
+
+*RBAC strategy*: Plan which teams or users should have admin, editor, or viewer access.
+Map these to {aws} Identity Center groups or Argo CD roles.
+
+*Multi-cluster architecture*: Determine if you'll manage multiple clusters from a single Argo CD instance.
+Consider using a dedicated management cluster for Argo CD.
+
+*Application organization*: Plan how you'll structure Applications and ApplicationSets.
+Consider using projects to organize applications by team or environment.
+
+*Sync policies*: Decide whether applications should sync automatically or require manual approval.
+Automated sync is common for development, manual for production.
+
+== Permissions
+
+For detailed information about IAM Capability Roles, trust policies, and security best practices, see <<capability-role>> and <<capabilities-security>>.
+
+=== IAM Capability Role overview
+
+When you create an Argo CD capability resource, you provide an IAM Capability Role.
+Unlike ACK, Argo CD primarily manages Kubernetes resources, not {aws} resources directly.
+However, the IAM role is required for:
+
+* Accessing private Git repositories in CodeCommit
+* Integrating with {aws} Identity Center for authentication
+* Accessing secrets in {aws} Secrets Manager (if configured)
+* Cross-cluster deployments to other EKS clusters
+
+=== CodeCommit integration
+
+If you're using CodeCommit repositories, attach a policy with read permissions:
+
+[source,json,subs="verbatim,attributes"]
+----
+{
+  "Version": "2012-10-17",{tcx5-waiver}
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "codecommit:GitPull"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+----
+
+[IMPORTANT]
+====
+For production use, restrict the `Resource` field to specific repository ARNs instead of using `"*"`.
+
+Example:
+[source,json]
+----
+"Resource": "arn:aws:codecommit:us-west-2:111122223333:my-app-repo"
+----
+
+This limits Argo CD's access to only the repositories it needs to manage.
+====
+
+=== Secrets Manager integration
+
+If you're storing repository credentials in Secrets Manager, attach a policy with read permissions:
+
+[source,json,subs="verbatim,attributes"]
+----
+{
+  "Version": "2012-10-17",{tcx5-waiver}
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:DescribeSecret"
+      ],
+      "Resource": "arn:aws:secretsmanager:*:*:secret:argocd/*"
+    }
+  ]
+}
+----
+
+=== Basic setup
+
+For basic Argo CD functionality with public Git repositories, no additional IAM policies are required beyond the trust policy.
+
+== Authentication
+
+=== {aws} Identity Center integration
+
+The Argo CD managed capability integrates directly with {aws} Identity Center (formerly {aws} SSO), enabling you to use your existing identity provider for authentication.
+
+When you configure {aws} Identity Center integration:
+
+. Users access the Argo CD UI through the EKS console
+. They authenticate using {aws} Identity Center (which can federate to your corporate identity provider)
+. {aws} Identity Center provides user and group information to Argo CD
+. Argo CD maps users and groups to RBAC roles based on your configuration
+. Users see only the applications and resources they have permission to access
+
+=== Simplifying access with Identity Center permission sets
+
+{aws} Identity Center provides two distinct authentication paths when working with Argo CD:
+
+*Argo CD API authentication*: Identity Center provides SSO authentication to the Argo CD UI and API.
+This is configured through the Argo CD capability's RBAC role mappings.
+
+*EKS cluster access*: The Argo CD capability uses the customer-provided IAM role to authenticate with EKS clusters through access entries.
+These access entries can be manually configured to add or remove permissions.
+
+You can use link:singlesignon/latest/userguide/howtocreatepermissionset.html[Identity Center permission sets,type="documentation"] to simplify identity management by allowing a single identity to access both Argo CD and EKS clusters.
+This reduces overhead by requiring you to manage only one identity across both systems, rather than maintaining separate credentials for Argo CD access and cluster access.
+
+=== RBAC role mappings
+
+Argo CD has built-in roles that you can map to {aws} Identity Center users and groups:
+
+*ADMIN*: Full access to all applications and settings.
+Can create, update, and delete applications.
+Can manage Argo CD configuration.
+
+*EDITOR*: Can create and modify applications.
+Cannot change Argo CD settings or delete applications.
+
+*VIEWER*: Read-only access to applications.
+Can view application status and history.
+Cannot make changes.
+
+[NOTE]
+====
+Role names are case-sensitive and must be uppercase (ADMIN, EDITOR, VIEWER).
+====
+
+[IMPORTANT]
+====
+EKS Capabilities integration with {aws} Identity Center supports up to 1,000 identities per Argo CD capability. An identity can be a user or a group.
+====
+
+== Multi-cluster deployments
+
+The Argo CD managed capability supports multi-cluster deployments, enabling you to manage applications across development, staging, and production clusters from a single Argo CD instance.
+
+=== How multi-cluster works
+
+When you register additional clusters with Argo CD:
+
+. You create cluster secrets that reference target EKS clusters by ARN
+. You create Applications or ApplicationSets that target different clusters
+. Argo CD connects to each cluster to deploy applications and watch resources
+. You view and manage all clusters from a single Argo CD UI
+
+=== Prerequisites for multi-cluster
+
+Before registering additional clusters:
+
+* Create an Access Entry on the target cluster for the Argo CD capability role
+* Ensure network connectivity between the Argo CD capability and target clusters
+* Verify IAM permissions to access the target clusters
+
+=== Register a cluster
+
+Register clusters using Kubernetes Secrets in the `argocd` namespace.
+
+Get the target cluster ARN. Replace [.replaceable]`region-code` with the {aws} Region that your target cluster is in and replace [.replaceable]`target-cluster` with the name of your target cluster.
+
+[source,bash,subs="verbatim,attributes,quotes"]
+----
+aws eks describe-cluster \
+  --region [.replaceable]`region-code` \
+  --name [.replaceable]`target-cluster` \
+  --query 'cluster.arn' \
+  --output text
+----
+
+Create a cluster secret using the cluster ARN:
+
+[source,yaml]
+----
+apiVersion: v1
+kind: Secret
+metadata:
+  name: target-cluster
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: cluster
+type: Opaque
+stringData:
+  name: target-cluster
+  server: arn:aws:eks:us-west-2:111122223333:cluster/target-cluster
+  project: default
+----
+
+[IMPORTANT]
+====
+Use the EKS cluster ARN in the `server` field, not the Kubernetes API server URL.
+The managed capability requires ARNs to identify target clusters.
+====
+
+Apply the secret:
+
+[source,bash]
+----
+kubectl apply -f cluster-secret.yaml
+----
+
+=== Configure Access Entry on target cluster
+
+The target cluster must have an Access Entry that grants the Argo CD capability role permission to deploy applications. Replace [.replaceable]`region-code` with the {aws} Region that your target cluster is in, replace [.replaceable]`target-cluster` with the name of your target cluster, and replace the ARN with your Argo CD capability role ARN.
+
+[source,bash,subs="verbatim,attributes,quotes"]
+----
+aws eks create-access-entry \
+  --region [.replaceable]`region-code` \
+  --cluster-name [.replaceable]`target-cluster` \
+  --principal-arn arn:aws:iam::[.replaceable]`111122223333`:role/[.replaceable]`ArgoCDCapabilityRole` \
+  --type STANDARD \
+  --kubernetes-groups system:masters
+----
+
+[NOTE]
+====
+For production use, consider using more restrictive Kubernetes groups instead of `system:masters`.
+====
+
+=== Private cluster access
+
+The Argo CD managed capability can deploy to fully private EKS clusters without requiring VPC peering or specialized networking configuration.
+{aws} manages connectivity between the Argo CD capability and private remote clusters automatically.
+
+=== Cross-account deployments
+
+For cross-account deployments, add the Argo CD IAM Capability Role from the source account to the target cluster's EKS Access Entry:
+
+. In the target account, create an Access Entry on the target EKS cluster
+. Use the Argo CD IAM Capability Role ARN from the source account as the principal
+. Configure appropriate Kubernetes RBAC permissions for the Access Entry
+. Register the target cluster in Argo CD using its EKS cluster ARN
+
+No additional IAM role creation or trust policy configuration is required—EKS Access Entries handle cross-account access.
+
+== Best practices
+
+*Use declarative sources as the source of truth*: Store all your application manifests in Git repositories, Helm registries, or OCI images, enabling version control, audit trails, and collaboration.
+
+*Implement proper RBAC*: Use {aws} Identity Center integration to control who can access and manage applications in Argo CD.
+Argo CD supports fine-grained access control to resources within Applications (Deployments, Pods, ConfigMaps, Secrets).
+
+*Use ApplicationSets for multi-environment deployments*: Use ApplicationSets to deploy applications across multiple clusters or namespaces with different configurations.
+
+== Lifecycle management
+
+=== Application sync policies
+
+Control how Argo CD syncs applications:
+
+*Manual sync*: Applications require manual approval to sync changes.
+Recommended for *production* environments.
+
+*Automatic sync*: Applications automatically sync when Git changes are detected.
+Common for development and staging environments.
+
+*Self-healing*: Automatically revert manual changes made to the cluster.
+Ensures cluster state matches Git.
+
+*Pruning*: Automatically delete resources removed from Git.
+Use with caution as this can delete resources.
+
+=== Application health
+
+Argo CD continuously monitors application health:
+
+* *Healthy*: All resources are running as expected
+* *Progressing*: Resources are being created or updated
+* *Degraded*: Some resources are not healthy
+* *Suspended*: Application is paused
+* *Missing*: Resources are missing from the cluster
+
+=== Sync windows
+
+Configure sync windows to control when applications can be synced:
+
+* Allow syncs only during maintenance windows
+* Block syncs during business hours
+* Schedule automatic syncs for specific times
+* Use sync windows for break-glass scenarios where you need to temporarily stop all syncs
+
+== Webhook configuration for faster sync
+
+By default, Argo CD polls Git repositories every 6 minutes to detect changes.
+For more responsive deployments, configure Git webhooks to trigger immediate syncs when changes are pushed.
+
+Webhooks provide several benefits:
+
+* Immediate sync response when code is pushed (seconds vs minutes)
+* Reduced polling overhead and improved system performance
+* More efficient use of API rate limits
+* Better user experience with faster feedback
+
+=== Webhook endpoint
+
+The Argo CD capability provides a webhook endpoint for receiving Git notifications.
+Find the webhook URL in the EKS console under your cluster's Capabilities tab, or retrieve it using the {aws} CLI:
+
+[source,bash,subs="verbatim,attributes,quotes"]
+----
+aws eks describe-capability \
+  --cluster-name [.replaceable]`my-cluster` \
+  --capability-name [.replaceable]`my-argocd` \
+  --query 'capability.configuration.argoCd.webhookUrl' \
+  --output text \
+  --region [.replaceable]`region-code`
+----
+
+=== Configure webhooks by Git provider
+
+*GitHub*: In your repository settings, add a webhook with the Argo CD webhook URL.
+Set the content type to `application/json` and select "Just the push event".
+
+*GitLab*: In your project settings, add a webhook with the Argo CD webhook URL.
+Enable "Push events" and optionally "Tag push events".
+
+*Bitbucket*: In your repository settings, add a webhook with the Argo CD webhook URL.
+Select "Repository push" as the trigger.
+
+*CodeCommit*: Create an Amazon EventBridge rule that triggers on CodeCommit repository state changes and sends notifications to the Argo CD webhook endpoint.
+
+For detailed webhook configuration instructions, see link:https://argo-cd.readthedocs.io/en/stable/operator-manual/webhook/[Argo CD Webhook Configuration^].
+
+[NOTE]
+====
+Webhooks complement polling—they don't replace it.
+Argo CD continues to poll repositories as a fallback mechanism in case webhook notifications are missed.
+====
+
+== Next steps
+
+* <<working-with-argocd>> - Learn how to create and manage Argo CD Applications
+* <<argocd-troubleshooting>> - Troubleshoot Argo CD issues
+* <<working-with-capabilities>> - Manage your Argo CD capability resource

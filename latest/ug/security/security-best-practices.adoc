@@ -1,0 +1,13 @@
+include::../attributes.txt[]
+
+[.topic]
+[#security-best-practices]
+= Secure Amazon EKS clusters with best practices
+:info_titleabbrev: Best practices
+
+[abstract]
+--
+Learn how to secure your Amazon EKS clusters by following the best practices from the community.
+--
+
+The Amazon EKS security best practices are in the link:eks/latest/best-practices/security.html[Best Practices for Security,type="documentation"] in the _Amazon EKS Best Practices Guide_.

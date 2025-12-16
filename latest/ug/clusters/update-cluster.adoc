@@ -1,0 +1,230 @@
+include::../attributes.txt[]
+
+[.topic]
+[#update-cluster]
+= Update existing cluster to new Kubernetes version
+:info_titleabbrev: Update Kubernetes version
+
+[abstract]
+--
+Learn how to update your Amazon EKS cluster to the latest Kubernetes version, ensuring compatibility with nodes and add-ons, and maintaining high availability during the process.
+--
+
+When a new Kubernetes version is available in Amazon EKS, you can update your Amazon EKS cluster to the latest version.  
+
+[IMPORTANT]
+====
+
+Once you upgrade a cluster, you can't downgrade to a previous version. Before you update to a new Kubernetes version, we recommend that you review the information in link:eks/latest/userguide/kubernetes-versions.html[Understand the Kubernetes version lifecycle on EKS,type="documentation"] and the update steps in this topic.
+
+====
+
+New Kubernetes versions sometimes introduce significant changes. Therefore, we recommend that you test the behavior of your applications against a new Kubernetes version before you update your production clusters. You can do this by building a continuous integration workflow to test your application behavior before moving to a new Kubernetes version.
+
+The update process consists of Amazon EKS launching new API server nodes with the updated Kubernetes version to replace the existing ones. Amazon EKS performs standard infrastructure and readiness health checks for network traffic on these new nodes to verify that they're working as expected. However, once you've started the cluster upgrade, you can't pause or stop it. If any of these checks fail, Amazon EKS reverts the infrastructure deployment, and your cluster remains on the prior Kubernetes version. Running applications aren't affected, and your cluster is never left in a non-deterministic or unrecoverable state. Amazon EKS regularly backs up all managed clusters, and mechanisms exist to recover clusters if necessary. We're constantly evaluating and improving our Kubernetes infrastructure management processes.
+
+To update the cluster, Amazon EKS requires up to five available IP addresses from the subnets that you specified when you created your cluster. Amazon EKS creates new cluster elastic network interfaces (network interfaces) in any of the subnets that you specified. The network interfaces may be created in different subnets than your existing network interfaces are in, so make sure that your security group rules allow <<sec-group-reqs,required cluster communication>> for any of the subnets that you specified when you created your cluster. If any of the subnets that you specified when you created the cluster don't exist, don't have enough available IP addresses, or don't have security group rules that allows necessary cluster communication, then the update can fail.
+
+To ensure that the API server endpoint for your cluster is always accessible, Amazon EKS provides a highly available Kubernetes control plane and performs rolling updates of API server instances during update operations. In order to account for changing IP addresses of API server instances supporting your Kubernetes API server endpoint, you must ensure that your API server clients manage reconnects effectively. Recent versions of `kubectl` and the Kubernetes client https://kubernetes.io/docs/tasks/administer-cluster/access-cluster-api/#programmatic-access-to-the-api[libraries] that are officially supported, perform this reconnect process transparently.
+
+NOTE: To learn more about what goes into a cluster update, see link:eks/latest/best-practices/cluster-upgrades.html["Best Practices for Cluster Upgrades",type="documentation"] in the EKS Best Practices Guide. This resource helps you plan an upgrade, and understand the strategy of upgrading a cluster. 
+
+== Considerations for Amazon EKS Auto Mode
+
+* The compute capability of Amazon EKS Auto Mode controls the Kubernetes version of nodes. After you upgrade the control plane, EKS Auto Mode will begin incrementally updating managed nodes. EKS Auto Mode respects pod disruption budgets. 
+* You do not have to manually upgrade the capabilities of Amazon EKS Auto Mode, including the compute autoscaling, block storage, and load balancing capabilities. 
+
+[#update-cluster-summary]
+== Summary
+The high-level summary of the Amazon EKS cluster upgrade process is as follows:
+
+. Ensure your cluster is in a state that will support an upgrade. This includes checking the Kubernetes APIs used by resources deployed into the cluster, ensuring the cluster is free of any health issues. You should use Amazon EKS upgrade insights when evaluating your cluster's upgrade readiness.
+. Upgrade the control plane to the next minor version (for example, from {k8s-n-1} to {k8s-n}).
+. Upgrade the nodes in the data plane to match that of the control plane.
+. Upgrade any additional applications that run on the cluster (for example, `cluster-autoscaler`).
+. Upgrade the add-ons provided by Amazon EKS, such as those included by default:
+  * <<managing-vpc-cni,Amazon VPC CNI recommended version>>
+  * <<managing-coredns,CoreDNS recommended version>>
+  * <<managing-kube-proxy,`kube-proxy` recommended version>>
+. Upgrade any clients that communicate with the cluster (for example, `kubectl`).
+
+[#update-existing-cluster]
+== Step 1: Prepare for upgrade
+Compare the Kubernetes version of your cluster control plane to the Kubernetes version of your nodes.
+
+* Get the Kubernetes version of your cluster control plane.
++
+[source,bash,subs="verbatim,attributes"]
+----
+kubectl version
+----
+* Get the Kubernetes version of your nodes. This command returns all self-managed and managed Amazon EC2, Fargate, and hybrid nodes. Each Fargate Pod is listed as its own node.
++
+[source,bash,subs="verbatim,attributes"]
+----
+kubectl get nodes
+----
+
+Before updating your control plane to a new Kubernetes version, make sure that the Kubernetes minor version of both the managed nodes and Fargate nodes in your cluster are the same as your control plane's version. For example, if your control plane is running version `1.29` and one of your nodes is running version `1.28`, then you must update your nodes to version `1.29` before updating your control plane to 1.30. We also recommend that you update your self-managed nodes and hybrid nodes to the same version as your control plane before updating the control plane. For more information, see <<update-managed-node-group>>, <<update-workers>>, and <<hybrid-nodes-upgrade>>. If you have Fargate nodes with a minor version lower than the control plane version, first delete the Pod that's represented by the node. Then update your control plane. Any remaining Pods will update to the new version after you redeploy them.
+
+== Step 2: Review upgrade considerations 
+
+Amazon EKS cluster insights automatically scan clusters against a list of potential Kubernetes version upgrade impacting issues such as deprecated Kubernetes API usage. Amazon EKS periodically updates the list of insight checks to perform based on evaluations of changes in the Kubernetes project. Amazon EKS also updates the insight checks list as changes are introduced in the Amazon EKS service along with new versions. For more information, see <<cluster-insights>>.
+
+Review the https://kubernetes.io/docs/reference/using-api/deprecation-guide/[Deprecated API Migration Guide] in the Kubernetes docs. 
+
+=== Review upgrade insights
+
+Use Amazon EKS upgrade insights to identify issues. For more information, see <<view-upgrade-insights-console>>.
+
+=== Detailed considerations
+
+* Because Amazon EKS runs a highly available control plane, you can update only one minor version at a time. For more information about this requirement, see https://kubernetes.io/docs/setup/version-skew-policy/#kube-apiserver[Kubernetes Version and Version Skew Support Policy]. Assume that your current cluster version is version `1.28` and you want to update it to version `1.30`. You must first update your version `1.28` cluster to version `1.29` and then update your version `1.29` cluster to version `1.30`.
+* Review the version skew between the Kubernetes `kube-apiserver` and the `kubelet` on your nodes. 
++
+** Starting from Kubernetes version `1.28`, `kubelet` may be up to three minor versions older than `kube-apiserver`. See https://kubernetes.io/releases/version-skew-policy/#kubelet[Kubernetes upstream version skew policy]. 
+** If the `kubelet` on your managed and Fargate nodes is on Kubernetes version `1.25` or newer, you can update your cluster up to three versions ahead without updating the `kubelet` version. For example, if the `kubelet` is on version `1.25`, you can update your Amazon EKS cluster version from `1.25` to `1.26`, to `1.27`, and to `1.28` while the `kubelet` remains on version `1.25`. 
+* As a best practice before starting an update, make sure that the `kubelet` on your nodes is at the same Kubernetes version as your control plane.  
+* If your cluster is configured with a version of the Amazon VPC CNI plugin for Kubernetes that is earlier than `1.8.0`, then we recommend that you update the plugin to the latest version before updating your cluster. To update the plugin, see <<managing-vpc-cni>>.
+* You can take a backup of your Amazon EKS cluster, to allow you to restore your Amazon EKS cluster state and persistent storage in the case of failures during the upgrade process. See <<integration-backup>>
+
+[#update-cluster-control-plane]
+== Step 3: Update cluster control plane
+
+//Whenever you try to upgrade the Kubernetes version of your cluster's control plane, cluster insights will check for certain upgrade impacting issues. Cluster insights will proactively prevent you from upgrading your cluster if it detects any such issues. You will need to review and resolve the issues to continue with the cluster upgrade.
+
+//Once the upgrade impacting issues are resolved, you will be able to upgrade the Kubernetes version of your cluster. When needed, you can use the `--force` flag for update cluster version commands. Passing this flag will force the upgrade even if their are upgrade impacting issues detected by cluster insights.
+
+[IMPORTANT]
+====
+Amazon EKS has temporarily rolled back a feature that would
+require you to use a `--force` flag to upgrade your cluster when there were certain cluster insight issues. For more information, see link:https://github.com/aws/containers-roadmap/issues/2570[Temporary rollback of enforcing upgrade insights on update cluster version] on GitHub.
+
+Amazon EKS refreshes a cluster insight 24 hours after the "last refresh time". You can compare the time you addressed an issue to the "last refresh time" of the cluster insight.
+
+Additionally, it can take up to 30 days for the insight status to update after addressing deprecated API usage. Upgrade insights always looks for deprecated API usage over a rolling 30 day window.
+
+//Amazon EKS refreshes a cluster insight 24 hours after the "last refresh time". Once the next insight check is run and is determined to be resolved, you can upgrade your cluster normally. Additionally, it can take up to 30 days for the insight status to update after addressing deprecated API usage. Upgrade insights always looks for deprecated API usage over a rolling 30 day window.
+
+//You can compare the time you addressed an issue to the "last refresh time" of the cluster insight. If you determine that the cluster insight is no longer accurate, you can add the `--force` flag without waiting for the next insight check refresh.
+
+====
+
+You can submit the request to upgrade your EKS control plane version using:
+
+* <<step3-eksctl,eksctl>>
+* <<step3-console,the {aws} console>>
+* <<step3-cli,the {aws} CLI>> 
+
+[#step3-eksctl]
+=== Update cluster - eksctl
+
+This procedure requires `eksctl` version `{eksctl-min-version}` or later. You can check your version with the following command:
+
+[source,bash,subs="verbatim,attributes"]
+----
+eksctl version
+----
+
+For instructions on how to install and update `eksctl`, see https://eksctl.io/installation[Installation] in the `eksctl` documentation.
+
+Update the Kubernetes version of your Amazon EKS control plane. Replace `<cluster-name>` with your cluster name. Replace `<version-number>` with the Amazon EKS supported version number that you want to update your cluster to. For a list of supported version numbers, see link:eks/latest/userguide/kubernetes-versions.html[Amazon EKS supported versions,type="documentation"].
+
+[source,bash,subs="verbatim,attributes"]
+----
+eksctl upgrade cluster --name <cluster-name> --version <version-number> --approve
+----
+
+The update takes several minutes to complete.
+
+Continue to <<step4>>.
+
+[#step3-console]
+=== Update cluster - {aws} console
+
+. Open the link:eks/home#/clusters[Amazon EKS console,type="console"].
+. Choose *Upgrade now* for a cluster you wish to upgrade.
+. Select the version to update your cluster to and choose *Upgrade*.
+//. If cluster insights has identified any upgrade impacting issues, Amazon EKS will prevent you from upgrading your cluster. You can force the upgrade by typing `confirm` in the *confirm upgrade* field and choosing *upgrade*.
+. The update takes several minutes to complete. Continue to <<step4>>.
+
+[#step3-cli]
+=== Update cluster - {aws} CLI 
+
+. Verify that the {aws} CLI is installed and that you are logged in. For more information, see link:cli/latest/userguide/getting-started-install.html[Installing or updating to the latest version of the {aws} CLI,type="documentation"].
+. Update your Amazon EKS cluster with the following {aws} CLI command. Replace `<cluster-name>` and `<region-code>` of the cluster you want to upgrade. Replace `<version-number>` with the Amazon EKS supported version number that you want to update your cluster to. For a list of supported version numbers, see link:eks/latest/userguide/kubernetes-versions.html[Amazon EKS supported versions,type="documentation"].
++
+[source,bash,subs="verbatim,attributes"]
+----
+aws eks update-cluster-version --name <cluster-name> \
+  --kubernetes-version <verion-number> --region <region-code>
+----
++
+An example output is as follows.
++
+[source,bash,subs="verbatim,attributes"]
+----
+{
+    "update": {
+        "id": "<update-id>",
+        "status": "InProgress",
+        "type": "VersionUpdate",
+        "params": [
+            {
+                "type": "Version",
+                "value": "<version-number>"
+            },
+            {
+                "type": "PlatformVersion",
+                "value": "eks.1"
+            }
+        ],
+[...]
+        "errors": []
+    }
+
+----
+
+. The update takes several minutes to complete. Monitor the status of your cluster update with the following command. In addition to using the same `<cluster-name>` and `<region-code>`, use the `<update-id>` that the previous command returned.
++
+[source,bash,subs="verbatim,attributes"]
+----
+aws eks describe-update --name <cluster-name> \
+   --region <region-code> --update-id <update-id>
+----
+//+
+//If needed, resolve any upgrade impacting issues and repeat this procedure. If you need to override `ERROR` status upgrade insights checks that you believe are no longer applicable, add the `--force` flag to the `update-cluster-version` command.
++
+When a `Successful` status is displayed, the update is complete.
+. Continue to <<step4>>.
+
+[#step4]
+== Step 4: Update cluster components
+
+. After your cluster update is complete, update your nodes to the same Kubernetes minor version as your updated cluster. For more information, see <<update-workers>>, <<update-managed-node-group>>, and <<hybrid-nodes-upgrade>>. Any new Pods that are launched on Fargate have a `kubelet` version that matches your cluster version. Existing Fargate Pods aren't changed.
+. (Optional) If you deployed the Kubernetes Cluster Autoscaler to your cluster before updating the cluster, update the Cluster Autoscaler to the latest version that matches the Kubernetes major and minor version that you updated to.
++
+.. Open the Cluster Autoscaler https://github.com/kubernetes/autoscaler/releases[releases] page in a web browser and find the latest Cluster Autoscaler version that matches your cluster's Kubernetes major and minor version. For example, if your cluster's Kubernetes version is `1.30` find the latest Cluster Autoscaler release that begins with `1.30`. Record the semantic version number (``1.30.n``, for example) for that release to use in the next step.
+.. Set the Cluster Autoscaler image tag to the version that you recorded in the previous step with the following command. If necessary, replace `X.XX.X` with your own value.
++
+[source,bash,subs="verbatim,attributes"]
+----
+kubectl -n kube-system set image deployment.apps/cluster-autoscaler cluster-autoscaler=registry.k8s.io/autoscaling/cluster-autoscaler:vX.XX.X
+----
+. (Clusters with GPU nodes only) If your cluster has node groups with GPU support (for example, `p3.2xlarge`), you must update the https://github.com/NVIDIA/k8s-device-plugin[NVIDIA device plugin for Kubernetes]DaemonSet on your cluster. Replace `<vX.X.X>` with your desired https://github.com/NVIDIA/k8s-device-plugin/releases[NVIDIA/k8s-device-plugin] version before running the following command.
++
+[source,bash,subs="verbatim,attributes"]
+----
+kubectl apply -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/<vX.X.X>/deployments/static/nvidia-device-plugin.yml
+----
+. Update the Amazon VPC CNI plugin for Kubernetes, CoreDNS, and `kube-proxy` add-ons. We recommend updating the add-ons to the minimum versions listed in <<boundserviceaccounttoken-validated-add-on-versions,Service account tokens>>.
++
+** If you are using Amazon EKS add-ons, select *Clusters* in the Amazon EKS console, then select the name of the cluster that you updated in the left navigation pane. Notifications appear in the console. They inform you that a new version is available for each add-on that has an available update. To update an add-on, select the *Add-ons* tab. In one of the boxes for an add-on that has an update available, select *Update now*, select an available version, and then select *Update*.
+** Alternately, you can use the {aws} CLI or `eksctl` to update add-ons. For more information, see <<updating-an-add-on>>.
+. If necessary, update your version of `kubectl`. You must use a `kubectl` version that is within one minor version difference of your Amazon EKS cluster control plane.
+
+
+[#downgrade-cluster]
+== Downgrade the Kubernetes version for an Amazon EKS cluster
+
+You cannot downgrade the Kubernetes of an Amazon EKS cluster. Instead, create a new cluster on a previous Amazon EKS version and migrate the workloads.  

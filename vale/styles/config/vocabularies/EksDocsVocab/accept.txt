@@ -1,0 +1,28 @@
+# Each line is a Ruby regex
+EKS
+eksctl
+Fargate
+Bottlerocket
+EBS
+StorageClass
+PersistentVolume
+CSIs?
+Karpenter
+VPCs?
+VPC Reachability Analyzer
+reachability
+CNIs?
+repo
+CIDRs?
+Firehose
+Kinesis
+AMIs?
+SDKs?
+FSx
+ENIs?
+IPs?
+CSRs?
+routable
+ARN
+CloudWatch
+CoreDNS

@@ -1,0 +1,176 @@
+[.topic]
+= EKA Auto Mode API Reference WIP
+
+:fmis: For more information, see 
+:in-guide: in the EKS User Guide
+
+:generic-update-request: For example, enable the capability.
+:generic-status-request: For example, if the capability is enabled or disabled.
+:generic-describe-cap: Indicates the current configuration of the capability on your EKS Auto Mode cluster. {generic-status-request} 
+:generic-config-request: Request to update the configuration of the
+
+:comp-cap-desc: If the compute capability is enabled, EKS Auto Mode will create and delete EC2 managed instances in your {aws} account.
+:comp-cap-link: {fmis} EKS Auto Mode compute capability {in-guide}.
+
+:lb-cap-desc: If the load balancing capability is enabled, EKS Auto Mode will create and delete EC2 managed instances in your {aws} account.
+:lb-cap-link: {fmis} EKS Auto Mode load balancing capability {in-guide}.
+
+:ebs-cap-desc: If the block storage capability is enabled, EKS Auto Mode will create and delete EBS volumes in your {aws} account.
+:ebs-cap-link: {fmis} EKS Auto Mode block storage capability {in-guide}.
+
+:iam-link: {fmis} the IAM Reference {in-guide}. 
+
+:launch-limitation: Currently, you cannot selectively enable or disable EKS Auto Mode capabilities. The compute capability, block storage capability, and load balancing capability must all be enabled or disabled. You must enable or disable all three capabilities in the same API request. 
+
+== Capabilities 
+
+
+// Load Balancing
+* ElasticLoadBalancing
+** {generic-describe-cap} {lb-cap-link}
+
+
+
+// Storage
+* BlockStorage
+** {generic-describe-cap} {ebs-cap-link}
+
+// Storage
+* BlockStorage$controllerRole
+** The IAM role used by EKS Auto Mode to manage EBS volumes. {iam-link}
+
+
+// missing compute cap?
+
+
+== $enabled
+
+
+// Load Balancing
+* ElasticLoadBalancing$enabled
+** indicates if the load balancing capability is enabled on your EKS Auto Mode cluster. {lb-cap-desc} 
+
+
+// Storage
+* BlockStorage$enabled
+** indicates if the block storage capability is enabled on your EKS Auto Mode cluster. {ebs-cap-desc}
+
+
+//missing compute cap?
+
+== CreateClusterRequest
+
+
+// Compute
+* CreateClusterRequest$computeConfig
+** Enable or disable the compute capability of EKS Auto Mode when creating your EKS Auto Mode cluster. {comp-cap-desc}
+
+
+// Storage
+* CreateClusterRequest$storageConfig
+** Enable or disable the block storage capability of EKS Auto Mode when creating your EKS Auto Mode cluster. {ebs-cap-desc}
+
+
+== Cluster$ Config
+
+
+// Compute
+* Cluster$computeConfig
+** {generic-describe-cap} {comp-cap-desc} {comp-cap-link}
+
+
+// Storage
+* Cluster$storageConfig
+** {generic-describe-cap} {ebs-cap-desc} {ebs-cap-link}
+
+
+== ConfigRequest
+
+* ComputeConfigRequest
+** {generic-config-request} the compute capability of your EKS Auto Mode. {generic-update-request} {comp-cap-link}
+
+* StorageConfigRequest
+** {generic-config-request} the storage capability of your EKS Auto Mode. {generic-update-request} {ebs-cap-link}
+
+
+=== Load Balancing
+
+
+* KubernetesNetworkConfigRequest$elasticLoadBalancing
+** Request to enable or disable the load balancing capability on your EKS Auto Mode cluster. {lb-cap-link}
+
+=== Compute
+
+
+* ComputeConfigRequest$enabled
+** Request to enable or disable the compute capability on your EKS Auto Mode cluster. {comp-cap-desc} 
+
+
+* ComputeConfigRequest$nodePools
+** Configuration for node pools that defines the compute resources for your EKS Auto Mode cluster. {fmis} EKS Auto Mode Node Pools {in-guide}.
+
+* ComputeConfigRequest$nodeRoleArn
+** The ARN of the IAM Role EKS will assign to EC2 managed instances in your EKS Auto Mode cluster. This value cannot be changed after the compute capability of EKS Auto Mode is enabled. {iam-link}
+
+=== Storage
+
+
+* StorageConfigRequest$blockStorage
+** Request to configure EBS Block Storage settings for your EKS Auto Mode cluster.
+
+
+== ConfigResponse
+:status-of-request: the status of the request to update
+
+// Compute
+* ComputeConfigResponse
+** indicates {status-of-request} the compute capability of your EKS Auto Mode cluster.
+
+
+// Storage
+* StorageConfigResponse
+** indicates {status-of-request} the block storage capability of your EKS Auto Mode cluster.
+
+=== Response pointers to objects
+
+
+// Storage
+* StorageConfigResponse$blockStorage
+** indicates the current configuration of the block storage capability on your EKS Auto Mode cluster. {generic-status-request}
+
+// Load Balancing
+* $elasticLoadBalancing
+** indicates the current configuration of the load balancing capability on your EKS Auto Mode cluster. {generic-status-request}
+
+
+=== Compute Details
+
+
+// Compute
+* ComputeConfigResponse$enabled
+** indicates if the compute capability is enabled on your EKS Auto Mode cluster. {comp-cap-desc}
+
+
+// Compute
+* ComputeConfigResponse$nodePools
+** indicates the current configuration of node pools in your EKS Auto Mode cluster. {fmis} EKS Auto Mode Node Pools {in-guide}.
+
+// Compute
+* ComputeConfigResponse$nodeRoleArn
+** The ARN of the IAM Role EKS will assign to EC2 managed instances in your EKS Auto Mode cluster. 
+
+
+== UpdateClusterConfigRequest
+:update-config: Update the configuration of
+
+// Storage
+* UpdateClusterConfigRequest$storageConfig
+** {update-config} the block storage capability of your EKS Auto Mode cluster. {generic-update-request}
+
+// Compute
+* UpdateClusterConfigRequest$computeConfig
+** {update-config} the compute capability of your EKS Auto Mode cluster. {generic-update-request}
+
+//where is LB?
+
+

@@ -1,0 +1,141 @@
+include::../attributes.txt[]
+
+[.topic]
+[#ack-create-cli]
+= Create an ACK capability using the {aws} CLI
+:info_titleabbrev: {aws} CLI
+
+This topic describes how to create an {aws} Controllers for Kubernetes (ACK) capability using the {aws} CLI.
+
+== Prerequisites
+
+* *{aws} CLI* – Version `{auto-cli-v2-version}` or later. To check your version, run `aws --version`. For more information, see link:cli/latest/userguide/cli-chap-install.html[Installing, updating, and uninstalling the {aws} CLI,type="documentation"] in the {aws} Command Line Interface User Guide.
+* *`kubectl`* – A command line tool for working with Kubernetes clusters. For more information, see <<install-kubectl>>.
+
+== Step 1: Create an IAM Capability Role
+
+Create a trust policy file:
+
+[source,bash,subs="verbatim,attributes"]
+----
+cat > ack-trust-policy.json << 'EOF'
+{
+  "Version": "2012-10-17",{tcx5-waiver}
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "capabilities.eks.amazonaws.com"
+      },
+      "Action": [
+        "sts:AssumeRole",
+        "sts:TagSession"
+      ]
+    }
+  ]
+}
+EOF
+----
+
+Create the IAM role:
+
+[source,bash,subs="verbatim,attributes"]
+----
+aws iam create-role \
+  --role-name ACKCapabilityRole \
+  --assume-role-policy-document file://ack-trust-policy.json
+----
+
+Attach the `AdministratorAccess` managed policy to the role:
+
+[source,bash,subs="verbatim,attributes"]
+----
+aws iam attach-role-policy \
+  --role-name ACKCapabilityRole \
+  --policy-arn arn:aws:iam::aws:policy/AdministratorAccess
+----
+
+[IMPORTANT]
+====
+The suggested `AdministratorAccess` policy grants broad permissions and is intended to streamline getting started.
+For production use, replace this with a custom policy that grants only the permissions needed for the specific {aws} services you plan to manage with ACK.
+For guidance on creating least-privilege policies, see <<ack-permissions>> and <<capabilities-security>>.
+====
+
+== Step 2: Create the ACK capability
+
+Create the ACK capability resource on your cluster. Replace [.replaceable]`region-code` with the {aws} Region that your cluster is in and replace [.replaceable]`my-cluster` with the name of your cluster.
+
+[source,bash,subs="verbatim,attributes,quotes"]
+----
+aws eks create-capability \
+  --region [.replaceable]`region-code` \
+  --cluster-name [.replaceable]`my-cluster` \
+  --capability-name my-ack \
+  --type ACK \
+  --role-arn arn:aws:iam::$(aws sts get-caller-identity --query Account --output text):role/ACKCapabilityRole \
+  --delete-propagation-policy RETAIN
+----
+
+The command returns immediately, but the capability takes some time to become active as EKS creates the required capability infrastructure and components.
+EKS will install the Kubernetes Custom Resource Definitions related to this capability in your cluster as it is being created.
+
+[NOTE]
+====
+If you receive an error that the cluster doesn't exist or you don't have permissions, verify:
+
+* The cluster name is correct
+* Your {aws} CLI is configured for the correct region
+* You have the required IAM permissions
+
+
+====
+
+== Step 3: Verify the capability is active
+
+Wait for the capability to become active. Replace [.replaceable]`region-code` with the {aws} Region that your cluster is in and replace [.replaceable]`my-cluster` with the name of your cluster.
+
+[source,bash,subs="verbatim,attributes,quotes"]
+----
+aws eks describe-capability \
+  --region [.replaceable]`region-code` \
+  --cluster-name [.replaceable]`my-cluster` \
+  --capability-name my-ack \
+  --query 'capability.status' \
+  --output text
+----
+
+The capability is ready when the status shows `ACTIVE`.
+Don't continue to the next step until the status is `ACTIVE`.
+
+You can also view the full capability details:
+
+[source,bash,subs="verbatim,attributes,quotes"]
+----
+aws eks describe-capability \
+  --region [.replaceable]`region-code` \
+  --cluster-name [.replaceable]`my-cluster` \
+  --capability-name my-ack
+----
+
+== Step 4: Verify custom resources are available
+
+After the capability is active, verify that ACK custom resources are available in your cluster:
+
+[source,bash,subs="verbatim,attributes"]
+----
+kubectl api-resources | grep services.k8s.aws
+----
+
+You should see a number of APIs listed for {aws} resources.
+
+[NOTE]
+====
+The capability for {aws} Controllers for Kubernetes will install a number of CRDs for a variety of {aws} resources.
+====
+
+== Next steps
+
+* <<ack-concepts>> - Understand ACK concepts and get started
+* <<ack-permissions>> - Configure IAM permissions for other {aws} services
+* <<working-with-capabilities>> - Manage your ACK capability resource

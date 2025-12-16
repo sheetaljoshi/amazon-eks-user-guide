@@ -1,0 +1,67 @@
+include::../attributes.txt[]
+
+[.topic]
+[#create-ack-capability]
+= Create an ACK capability
+:info_titleabbrev: Create ACK capability
+
+[abstract]
+--
+Learn how to create an {aws} Controllers for Kubernetes (ACK) capability on your Amazon EKS cluster using the Console, {aws} CLI, or eksctl.
+--
+
+This chapter explains how to create an ACK capability on your Amazon EKS cluster.
+
+== Prerequisites
+
+Before creating an ACK capability, ensure you have:
+
+* An Amazon EKS cluster 
+* An IAM Capability Role with permissions for ACK to manage {aws} resources
+* Sufficient IAM permissions to create capability resources on EKS clusters
+* The appropriate CLI tool installed and configured, or access to the EKS Console
+
+For instructions on creating the IAM Capability Role, see <<capability-role>>.
+
+[IMPORTANT]
+====
+ACK is an infrastructure management capability that grants the ability to create, modify, and delete {aws} resources.
+This is an admin-scoped capability that should be carefully controlled.
+Anyone with permission to create Kubernetes resources in your cluster can effectively create {aws} resources through ACK, subject to the IAM Capability Role permissions.
+The IAM Capability Role you provide determines which {aws} resources ACK can create and manage.
+For guidance on creating an appropriate role with least-privilege permissions, see <<capability-role>> and <<capabilities-security>>.
+====
+
+== Choose your tool
+
+You can create an ACK capability using the {aws-management-console}, {aws} CLI, or eksctl:
+
+* <<ack-create-console>> - Use the Console for a guided experience
+* <<ack-create-cli>> - Use the {aws} CLI for scripting and automation
+* <<ack-create-eksctl>> - Use eksctl for a Kubernetes-native experience
+
+== What happens when you create an ACK capability
+
+When you create an ACK capability:
+
+. EKS creates the ACK capability service and configures it to monitor and manage resources in your cluster
+. Custom Resource Definitions (CRDs) are installed in your cluster
+. The capability assumes the IAM Capability Role you provide
+. ACK begins watching for its custom resources in your cluster
+. The capability status changes from `CREATING` to `ACTIVE`
+
+Once active, you can create ACK custom resources in your cluster to manage {aws} resources.
+
+== Next steps
+
+After creating the ACK capability:
+
+* <<ack-concepts>> - Understand ACK concepts and get started with {aws} resources
+* <<ack-concepts>> - Learn about reconciliation, field exports, and resource adoption patterns
+* <<ack-permissions>> - Configure IAM permissions and multi-account patterns
+
+include::ack-create-console.adoc[leveloffset=+1]
+
+include::ack-create-cli.adoc[leveloffset=+1]
+
+include::ack-create-eksctl.adoc[leveloffset=+1]

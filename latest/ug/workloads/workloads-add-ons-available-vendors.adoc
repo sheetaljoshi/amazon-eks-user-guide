@@ -1,0 +1,919 @@
+include::../attributes.txt[]
+
+[.topic]
+[#workloads-add-ons-available-vendors]
+= {aws} Marketplace add-ons
+:info_titleabbrev: Marketplace add-ons
+
+[abstract]
+--
+Learn about the Amazon EKS add-ons from independent software vendors.
+--
+
+In addition to the previous list of Amazon EKS add-ons, you can also add a wide selection of operational software Amazon EKS add-ons from independent software vendors. Choose an add-on to learn more about it and its installation requirements.
+
+
+
+video::IIPj119mspc[youtube,align = center,height = 405,fileref = https://www.youtube.com/embed/IIPj119mspc,width = 720]
+
+
+[#add-on-accuknox]
+== Accuknox
+
+[abstract]
+--
+Learn about the Accuknox Amazon EKS add-on.
+--
+
+The add-on name is `accuknox_kubearmor` and the namespace is `kubearmor`. Accuknox publishes the add-on.
+
+For information about the add-on, see https://docs.kubearmor.io/kubearmor/quick-links/deployment_guide[Getting Started with KubeArmor] in the KubeArmor documentation.
+
+[#add-on-accuknox-service-account-name]
+=== Service account name
+
+A service account isn't used with this add-on.
+
+[#add-on-accuknox-managed-policy]
+=== {aws} managed IAM policy
+
+A managed policy isn't used with this add-on.
+
+[#add-on-accuknox-custom-permissions]
+=== Custom IAM permissions
+
+Custom permissions aren't used with this add-on.
+
+[#add-on-akuity]
+== Akuity
+
+[abstract]
+--
+Learn about the Akuity Amazon EKS add-on.
+--
+
+The add-on name is `akuity_agent` and the namespace is `akuity`. Akuity publishes the add-on.
+
+For information about how the add-on, see https://docs.akuity.io/tutorials/eks-addon-agent-install/[Installing the Akuity Agent on Amazon EKS with the Akuity EKS add-on] in the Akuity Platform documentation.
+
+[#add-on-akuity-service-account-name]
+=== Service account name
+
+A service account isn't used with this add-on.
+
+[#add-on-akuity-managed-policy]
+=== {aws} managed IAM policy
+
+A managed policy isn't used with this add-on.
+
+[#add-on-akuity-custom-permissions]
+=== Custom IAM permissions
+
+Custom permissions aren't used with this add-on.
+
+[#add-on-calyptia]
+== Calyptia
+
+[abstract]
+--
+Learn about the Calyptia Amazon EKS add-on.
+--
+
+The add-on name is `calyptia_fluent-bit` and the namespace is `calytia-fluentbit`. Calyptia publishes the add-on.
+
+For information about the add-on, see https://docs.akuity.io/tutorials/eks-addon-agent-install/[Getting Started with Calyptia Core Agent] on the Calyptia documentation website.
+
+[#add-on-calyptia-service-account-name]
+=== Service account name
+
+The service account name is  `clyptia-fluentbit`.
+
+[#add-on-calyptia-managed-policy]
+=== {aws} managed IAM policy
+
+This add-on uses the `AWSMarketplaceMeteringRegisterUsage` managed policy. For more information, see link:aws-managed-policy/latest/reference/AWSMarketplaceMeteringRegisterUsage.html[AWSMarketplaceMeteringRegisterUsage,type="documentation"] in the {aws} Managed Policy Reference Guide.
+
+[#add-on-calyptia-custom-permissions]
+=== Command to create required IAM role
+
+The following command requires that you have an IAM OpenID Connect (OIDC) provider for your cluster. To determine whether you have one, or to create one, see <<enable-iam-roles-for-service-accounts>>. Replace [.replaceable]`my-cluster` with the name of your cluster and [.replaceable]`my-calyptia-role` with the name for your role. This command requires that you have https://eksctl.io[eksctl] installed on your device. If you need to use a different tool to create the role and annotate the Kubernetes service account, see <<associate-service-account-role>>.
+
+[source,bash,subs="verbatim,attributes"]
+----
+eksctl create iamserviceaccount --name service-account-name  --namespace calyptia-fluentbit --cluster my-cluster --role-name my-calyptia-role \
+    --role-only --attach-policy-arn {arn-aws}iam::aws:policy/AWSMarketplaceMeteringRegisterUsage --approve
+----
+
+
+[#add-on-cisco-collector]
+== Cisco Observability Collector
+
+[abstract]
+--
+Learn about the Cisco Observability Collector Amazon EKS add-on.
+--
+
+The add-on name is `cisco_cisco-cloud-observability-collectors` and the namespace is `appdynamics`. Cisco pubishes the add-on.
+
+For information about the add-on, see https://docs.appdynamics.com/observability/cisco-cloud-observability/en/kubernetes-and-app-service-monitoring/install-kubernetes-and-app-service-monitoring-with-amazon-elastic-kubernetes-service/use-the-cisco-cloud-observability-aws-marketplace-add-ons[Use the Cisco Cloud Observability {aws} Marketplace Add-Ons] in the Cisco AppDynamics documentation.
+
+[#add-on-cisco-collector-service-account-name]
+=== Service account name
+
+A service account isn't used with this add-on.
+
+[#add-on-cisco-collector-managed-policy]
+=== {aws} managed IAM policy
+
+A managed policy isn't used with this add-on.
+
+[#add-on-cisco-collector-custom-permissions]
+=== Custom IAM permissions
+
+Custom permissions aren't used with this add-on.
+
+[#add-on-cisco-operator]
+== Cisco Observability Operator
+
+[abstract]
+--
+Learn about the Cisco Observability Operator Amazon EKS add-on.
+--
+
+The add-on name is `cisco_cisco-cloud-observability-operators` and the namespace is `appdynamics`. Cisco publishes the add-on.
+
+For information about the add-on, see https://docs.appdynamics.com/observability/cisco-cloud-observability/en/kubernetes-and-app-service-monitoring/install-kubernetes-and-app-service-monitoring-with-amazon-elastic-kubernetes-service/use-the-cisco-cloud-observability-aws-marketplace-add-ons[Use the Cisco Cloud Observability {aws} Marketplace Add-Ons] in the Cisco AppDynamics documentation.
+
+[#add-on-cisco-operator-service-account-name]
+=== Service account name
+
+A service account isn't used with this add-on.
+
+[#add-on-cisco-operator-managed-policy]
+=== {aws} managed IAM policy
+
+A managed policy isn't used with this add-on.
+
+[#add-on-cisco-operator-custom-permissions]
+=== Custom IAM permissions
+
+Custom permissions aren't used with this add-on.
+
+[#add-on-cloudsoft]
+== CLOUDSOFT
+
+[abstract]
+--
+Learn about the CLOUDSOFT Amazon EKS add-on.
+--
+
+The add-on name is `cloudsoft_cloudsoft-amp` and the namespace is `cloudsoft-amp`. CLOUDSOFT publishes the add-on.
+
+For information about the add-on, see https://docs.cloudsoft.io/operations/configuration/aws-eks-addon.html[Amazon EKS ADDON] in the CLOUDSOFT documentation.
+
+[#add-on-cloudsoft-service-account-name]
+=== Service account name
+
+A service account isn't used with this add-on.
+
+[#add-on-cloudsoft-managed-policy]
+=== {aws} managed IAM policy
+
+A managed policy isn't used with this add-on.
+
+[#add-on-cloudsoft-custom-permissions]
+=== Custom IAM permissions
+
+Custom permissions aren't used with this add-on.
+
+[#add-on-cribl]
+== Cribl
+
+[abstract]
+--
+Learn about the Cribl Amazon EKS add-on.
+--
+
+The add-on name is `cribl_cribledge` and the namespace is `cribledge`. Cribl publishes the add-on.
+
+For information about the add-on, see https://docs.cribl.io/edge/usecase-edge-aws-eks/[Installing the Cribl Amazon EKS Add-on for Edge] in the Cribl documentation
+
+[#add-on-cribl-service-account-name]
+=== Service account name
+
+A service account isn't used with this add-on.
+
+[#add-on-cribl-managed-policy]
+=== {aws} managed IAM policy
+
+A managed policy isn't used with this add-on.
+
+[#add-on-cribl-custom-permissions]
+=== Custom IAM permissions
+
+Custom permissions aren't used with this add-on.
+
+[#add-on-dynatrace]
+== Dynatrace
+
+[abstract]
+--
+Learn about the Dynatrace Amazon EKS add-on.
+--
+
+The add-on name is `dynatrace_dynatrace-operator` and the namespace is `dynatrace`. Dynatrace publishes the add-on.
+
+For information about the add-on, see https://www.dynatrace.com/technologies/kubernetes-monitoring/[Kubernetes monitoring] in the dynatrace documentation.
+
+[#add-on-dynatrace-service-account-name]
+=== Service account name
+
+A service account isn't used with this add-on.
+
+[#add-on-dynatrace-managed-policy]
+=== {aws} managed IAM policy
+
+A managed policy isn't used with this add-on.
+
+[#add-on-dynatrace-custom-permissions]
+=== Custom IAM permissions
+
+Custom permissions aren't used with this add-on.
+
+[#add-on-datree-pro]
+== Datree
+
+[abstract]
+--
+Learn about the Datree Amazon EKS add-on.
+--
+
+The add-on name is `datree_engine-pro` and the namespace is `datree`. Datree publishes the add-on.
+
+For information about the add-on, see https://hub.datree.io/integrations/eks-integration[Amazon EKS-intergration] in the Datree documentation.
+
+[#add-on-datree-pro-service-account-name]
+=== Service account name
+
+The service account name is datree-webhook-server-awsmp.
+
+[#add-on-datree-pro-managed-policy]
+=== {aws} managed IAM policy
+
+The managed policy is AWSLicenseManagerConsumptionPolicy. For more information, see link:aws-managed-policy/latest/reference/AWSLicenseManagerConsumptionPolicy.html[AWSLicenseManagerConsumptionPolicy,type="documentation"] in the {aws} Managed Policy Reference Guide..
+
+[#add-on-datree-pro-iam-command]
+=== Command to create required IAM role
+
+The following command requires that you have an IAM OpenID Connect (OIDC) provider for your cluster. To determine whether you have one, or to create one, see <<enable-iam-roles-for-service-accounts>>. Replace [.replaceable]`my-cluster` with the name of your cluster and [.replaceable]`my-datree-role` with the name for your role. This command requires that you have https://eksctl.io[eksctl] installed on your device. If you need to use a different tool to create the role and annotate the Kubernetes service account, see <<associate-service-account-role>>.
+
+[source,bash,subs="verbatim,attributes"]
+----
+eksctl create iamserviceaccount --name datree-webhook-server-awsmp --namespace datree --cluster my-cluster --role-name my-datree-role \
+    --role-only --attach-policy-arn {arn-aws}iam::aws:policy/service-role/AWSLicenseManagerConsumptionPolicy --approve
+----
+
+
+[#add-on-datree-pro-custom-permissions]
+=== Custom permissions
+
+Custom permissions aren't used with this add-on.
+
+[#add-on-datadog]
+== Datadog
+
+[abstract]
+--
+Learn about the Datadog Amazon EKS add-on.
+--
+
+The add-on name is `datadog_operator` and the namespace is `datadog-agent`. Datadog publishes the add-on.
+
+For information about the add-on, see https://docs.datadoghq.com/containers/guide/operator-eks-addon/?tab=console[Installing the Datadog Agent on Amazon EKS with the Datadog Operator Add-on] in the Datadog documentation.
+
+[#add-on-datadog-service-account-name]
+=== Service account name
+
+A service account isn't used with this add-on.
+
+[#add-on-datadog-managed-policy]
+=== {aws} managed IAM policy
+
+A managed policy isn't used with this add-on.
+
+[#add-on-datadog-custom-permissions]
+=== Custom IAM permissions
+
+Custom permissions aren't used with this add-on.
+
+[#add-on-groundcover]
+== Groundcover
+
+[abstract]
+--
+Learn about the Groundcover Amazon EKS add-on.
+--
+
+The add-on name is `groundcover_agent` and the namespace is `groundcover`. groundcover publishes the add-on.
+
+For information about the add-on, see https://docs.groundcover.com/docs/~/changes/VhDDAl1gy1VIO3RIcgxD/configuration/customization-guide/customize-deployment/eks-add-on[Installing the groundcover Amazon EKS Add-on] in the groundcover documentation.
+
+[#add-on-groundcover-service-account-name]
+=== Service account name
+
+A service account isn't used with this add-on.
+
+[#add-on-groundcover-managed-policy]
+=== {aws} managed IAM policy
+
+A managed policy isn't used with this add-on.
+
+[#add-on-groundcover-custom-permissions]
+=== Custom IAM permissions
+
+Custom permissions aren't used with this add-on.
+
+[#add-on-instana]
+== IBM Instana
+
+The add-on name is `instana-agent` and the namespace is `instana-agent`. IBM publishes the add-on.
+
+For information about the add-on, see link:blogs/ibm-redhat/implement-observability-for-amazon-eks-workloads-using-the-instana-amazon-eks-add-on/[Implement observability for Amazon EKS workloads using the Instana Amazon EKS add-on,type="marketing"] and link:blogs/ibm-redhat/monitor-and-optimize-amazon-eks-costs-with-ibm-instana-and-kubecost/[Monitor and optimize Amazon EKS costs with IBM Instana and Kubecost,type="marketing"] in the {aws} Blog.
+
+Instana Observability (Instana) offers an Amazon EKS Add-on that deploys Instana agents to Amazon EKS clusters. Customers can use this add-on to collect and analyze real-time performance data to gain insights into their containerized applications. The Instana Amazon EKS add-on provides visibility across your Kubernetes environments. Once deployed, the Instana agent automatically discovers components within your Amazon EKS clusters including nodes, namespaces, deployments, services, and pods.
+
+[#add-on-instana-service-account-name]
+=== Service account name
+
+A service account isn't used with this add-on.
+
+[#add-on-instana-managed-policy]
+=== {aws} managed IAM policy
+
+A managed policy isn't used with this add-on.
+
+[#add-on-instana-custom-permissions]
+=== Custom IAM permissions
+
+Custom permissions aren't used with this add-on.
+
+[#add-on-grafana]
+== Grafana Labs
+
+[abstract]
+--
+Learn about the Grafana Labs Amazon EKS add-on.
+--
+
+The add-on name is `grafana-labs_kubernetes-monitoring` and the namespace is `monitoring`. Grafana Labs publishes the add-on.
+
+For information about the add-on, see https://grafana.com/docs/grafana-cloud/monitor-infrastructure/kubernetes-monitoring/configuration/config-aws-eks/[Configure Kubernetes Monitoring as an Add-on with Amazon EKS] in the Grafana Labs documentation.
+
+[#add-on-grafana-service-account-name]
+=== Service account name
+
+A service account isn't used with this add-on.
+
+[#add-on-grafana-managed-policy]
+=== {aws} managed IAM policy
+
+A managed policy isn't used with this add-on.
+
+[#add-on-grafana-custom-permissions]
+=== Custom IAM permissions
+
+Custom permissions aren't used with this add-on.
+
+[#add-on-guance]
+== Guance
+
+* *Publisher* – GUANCE
+* *Name* – `guance_datakit`
+* *Namespace* – `datakit`
+* *Service account name* – A service account isn't used with this add-on.
+* *{aws} managed IAM policy* – A managed policy isn't used with this add-on.
+* *Custom IAM permissions* – Custom permissions aren't used with this add-on.
+* *Setup and usage instructions* – See https://docs.guance.com/en/datakit/datakit-eks-deploy/#add-on-install[Using Amazon EKS add-on] in the Guance documentation.
+
+
+[#add-on-ha-proxy]
+== HA Proxy
+
+[abstract]
+--
+Learn about the HA Proxy Amazon EKS add-on.
+--
+
+The name is `haproxy-technologies_kubernetes-ingress-ee` and the namespace is `haproxy-controller`. HA Proxy publishes the add-on.
+
+For information about the add-on, see https://hub.datree.io/integrations/eks-integration[Amazon EKS-intergration] in the Datree documentation.
+
+[#add-on-ha-proxy-service-account-name]
+=== Service account name
+
+The service account name is `customer defined`.
+
+[#add-on-ha-proxy-managed-policy]
+=== {aws} managed IAM policy
+
+The managed policy is AWSLicenseManagerConsumptionPolicy. For more information, see link:aws-managed-policy/latest/reference/AWSLicenseManagerConsumptionPolicy.html[AWSLicenseManagerConsumptionPolicy,type="documentation"] in the {aws} Managed Policy Reference Guide..
+
+[#add-on-ha-proxy-iam-command]
+=== Command to create required IAM role
+
+The following command requires that you have an IAM OpenID Connect (OIDC) provider for your cluster. To determine whether you have one, or to create one, see <<enable-iam-roles-for-service-accounts>>. Replace [.replaceable]`my-cluster` with the name of your cluster and [.replaceable]`my-haproxy-role` with the name for your role. This command requires that you have https://eksctl.io[eksctl] installed on your device. If you need to use a different tool to create the role and annotate the Kubernetes service account, see <<associate-service-account-role>>.
+
+[source,bash,subs="verbatim,attributes"]
+----
+eksctl create iamserviceaccount --name service-account-name  --namespace haproxy-controller --cluster my-cluster --role-name my-haproxy-role \
+    --role-only --attach-policy-arn {arn-aws}iam::aws:policy/service-role/AWSLicenseManagerConsumptionPolicy --approve
+----
+
+
+[#add-on-ha-proxy-custom-permissions]
+=== Custom permissions
+
+Custom permissions aren't used with this add-on.
+
+[#add-on-kpow]
+== Kpow
+
+[abstract]
+--
+Learn about the Kpow Amazon EKS add-on.
+--
+
+The add-on name is `factorhouse_kpow` and the namespace is `factorhouse`. Factorhouse publishes the add-on.
+
+For information about the add-on, see https://docs.kpow.io/installation/aws-marketplace-lm/[{aws} Marketplace LM] in the Kpow documentation.
+
+[#add-on-kpow-service-account-name]
+=== Service account name
+
+The service account name is `kpow`.
+
+[#add-on-kpow-managed-policy]
+=== {aws} managed IAM policy
+
+The managed policy is AWSLicenseManagerConsumptionPolicy. For more information, see link:aws-managed-policy/latest/reference/AWSLicenseManagerConsumptionPolicy.html[AWSLicenseManagerConsumptionPolicy,type="documentation"] in the {aws} Managed Policy Reference Guide..
+
+[#add-on-kpow-iam-command]
+=== Command to create required IAM role
+
+The following command requires that you have an IAM OpenID Connect (OIDC) provider for your cluster. To determine whether you have one, or to create one, see <<enable-iam-roles-for-service-accounts>>. Replace [.replaceable]`my-cluster` with the name of your cluster and [.replaceable]`my-kpow-role` with the name for your role. This command requires that you have https://eksctl.io[eksctl] installed on your device. If you need to use a different tool to create the role and annotate the Kubernetes service account, see <<associate-service-account-role>>.
+
+[source,bash,subs="verbatim,attributes"]
+----
+eksctl create iamserviceaccount --name kpow --namespace factorhouse --cluster my-cluster --role-name my-kpow-role \
+    --role-only --attach-policy-arn {arn-aws}iam::aws:policy/service-role/AWSLicenseManagerConsumptionPolicy --approve
+----
+
+
+[#add-on-kpow-custom-permissions]
+=== Custom permissions
+
+Custom permissions aren't used with this add-on.
+
+[#add-on-kubecost]
+== Kubecost
+
+[abstract]
+--
+Learn about the Kubecost Amazon EKS add-on.
+--
+
+The add-on name is `kubecost_kubecost` and the namespace is `kubecost`. Kubecost publishes the add-on.
+
+For information about the add-on, see https://docs.kubecost.com/install-and-configure/install/cloud-integration/aws-cloud-integrations[{aws} Cloud Billing Integration] in the Kubecost documentation.
+
+You must have the <<ebs-csi,Store Kubernetes volumes with Amazon EBS>> installed on your cluster. otherwise you will receive an error.
+
+[#add-on-kubecost-service-account-name]
+=== Service account name
+
+A service account isn't used with this add-on.
+
+[#add-on-kubecost-managed-policy]
+=== {aws} managed IAM policy
+
+A managed policy isn't used with this add-on.
+
+[#add-on-kubecost-custom-permissions]
+=== Custom IAM permissions
+
+Custom permissions aren't used with this add-on.
+
+[#add-on-kasten]
+== Kasten
+
+[abstract]
+--
+Learn about the Kasten Amazon EKS add-on.
+--
+
+The add-on name is `kasten_k10` and the namespace is `kasten-io`. Kasten by Veeam publishes the add-on.
+
+For information about the add-on, see https://docs.kasten.io/latest/install/aws-eks-addon/aws-eks-addon.html[Installing K10 on {aws} using Amazon EKS Add-on] in the Kasten documentation.
+
+You must have the Amazon EBS CSI driver installed on your cluster with a default `StorageClass`.
+
+[#add-on-kasten-service-account-name]
+=== Service account name
+
+The service account name is  `k10-k10`.
+
+[#add-on-kasten-managed-policy]
+=== {aws} managed IAM policy
+
+The managed policy is AWSLicenseManagerConsumptionPolicy. For more information, see link:aws-managed-policy/latest/reference/AWSLicenseManagerConsumptionPolicy.html[AWSLicenseManagerConsumptionPolicy,type="documentation"] in the {aws} Managed Policy Reference Guide..
+
+[#add-on-kasten-iam-command]
+=== Command to create required IAM role
+
+The following command requires that you have an IAM OpenID Connect (OIDC) provider for your cluster. To determine whether you have one, or to create one, see <<enable-iam-roles-for-service-accounts>>. Replace [.replaceable]`my-cluster` with the name of your cluster and [.replaceable]`my-kasten-role` with the name for your role. This command requires that you have https://eksctl.io[eksctl] installed on your device. If you need to use a different tool to create the role and annotate the Kubernetes service account, see <<associate-service-account-role>>.
+
+[source,bash,subs="verbatim,attributes"]
+----
+eksctl create iamserviceaccount --name k10-k10 --namespace kasten-io --cluster my-cluster --role-name my-kasten-role \
+    --role-only --attach-policy-arn {arn-aws}iam::aws:policy/service-role/AWSLicenseManagerConsumptionPolicy --approve
+----
+
+
+[#add-on-kasten-custom-permissions]
+=== Custom permissions
+
+Custom permissions aren't used with this add-on.
+
+[#add-on-kong]
+== Kong
+
+[abstract]
+--
+Learn about the Kong Amazon EKS add-on.
+--
+
+The add-on name is `kong_konnect-ri` and the namespace is `kong`. Kong publishes the add-on.
+
+For information about the add-on, see https://kong.github.io/aws-marketplace-addon-kong-gateway/[Installing the Kong Gateway EKS Add-on] in the Kong documentation.
+
+You must have the <<ebs-csi,Store Kubernetes volumes with Amazon EBS>> installed on your cluster. otherwise you will receive an error.
+
+[#add-on-kong-service-account-name]
+=== Service account name
+
+A service account isn't used with this add-on.
+
+[#add-on-kong-managed-policy]
+=== {aws} managed IAM policy
+
+A managed policy isn't used with this add-on.
+
+[#add-on-kong-custom-permissions]
+=== Custom IAM permissions
+
+Custom permissions aren't used with this add-on.
+
+[#add-on-leaksignal]
+== LeakSignal
+
+[abstract]
+--
+Learn about the LeakSignal Amazon EKS add-on.
+--
+
+The add-on name is `leaksignal_leakagent` and the namespace is `leakagent`. LeakSignal publishes the add-on.
+
+For information about the add-on, see https://www.leaksignal.com/docs/LeakAgent/Deployment/{aws}%20EKS%20Addon/[Install the LeakAgent add-on] in the LeakSignal documentation
+
+You must have the <<ebs-csi,Store Kubernetes volumes with Amazon EBS>> installed on your cluster. otherwise you will receive an error.
+
+[#add-on-leaksignal-service-account-name]
+=== Service account name
+
+A service account isn't used with this add-on.
+
+[#add-on-leaksignal-managed-policy]
+=== {aws} managed IAM policy
+
+A managed policy isn't used with this add-on.
+
+[#add-on-leaksignal-custom-permissions]
+=== Custom IAM permissions
+
+Custom permissions aren't used with this add-on.
+
+[#add-on-netapp]
+== NetApp
+
+[abstract]
+--
+Learn about the NetApp Amazon EKS add-on.
+--
+
+The add-on name is `netapp_trident-operator` and the namespace is `trident`. NetApp publishes the add-on.
+
+For information about the add-on, see https://docs.netapp.com/us-en/trident/trident-use/trident-aws-addon.html[Configure the Trident EKS add-on] in the NetApp documentation.
+
+[#add-on-netapp-service-account-name]
+=== Service account name
+
+A service account isn't used with this add-on.
+
+[#add-on-netapp-managed-policy]
+=== {aws} managed IAM policy
+
+A managed policy isn't used with this add-on.
+
+[#add-on-netapp-custom-permissions]
+=== Custom IAM permissions
+
+Custom permissions aren't used with this add-on.
+
+[#add-on-new-relic]
+== New Relic
+
+[abstract]
+--
+Learn about the New Relic Amazon EKS add-on.
+--
+
+The add-on name is `new-relic_kubernetes-operator` and the namespace is `newrelic`. New Relic publishes the add-on.
+
+For information about the add-on, see https://docs.newrelic.com/docs/infrastructure/amazon-integrations/connect/eks-add-on[Installing the New Relic Add-on for EKS] in the New Relic documentation.
+
+[#add-on-new-relic-service-account-name]
+=== Service account name
+
+A service account isn't used with this add-on.
+
+[#add-on-new-relic-managed-policy]
+=== {aws} managed IAM policy
+
+A managed policy isn't used with this add-on.
+
+[#add-on-new-relic-custom-permissions]
+=== Custom IAM permissions
+
+Custom permissions aren't used with this add-on.
+
+[#add-on-rafay]
+== Rafay
+
+[abstract]
+--
+Learn about the Rafay Amazon EKS add-on.
+--
+
+The add-on name is `rafay-systems_rafay-operator` and the namespace is `rafay-system`. Rafay publishes the add-on.
+
+For information about the add-on, see https://docs.rafay.co/clusters/import/eksaddon/[Installing the Rafay Amazon EKS Add-on] in the Rafay documentation.
+
+[#add-on-rafay-service-account-name]
+=== Service account name
+
+A service account isn't used with this add-on.
+
+[#add-on-rafay-managed-policy]
+=== {aws} managed IAM policy
+
+A managed policy isn't used with this add-on.
+
+[#add-on-rafay-custom-permissions]
+=== Custom IAM permissions
+
+Custom permissions aren't used with this add-on.
+
+[#add-on-rad]
+== Rad Security
+
+* *Publisher* – RAD SECURITY
+* *Name* – `rad-security_rad-security`
+* *Namespace* – `ksoc`
+* *Service account name* – A service account isn't used with this add-on.
+* *{aws} managed IAM policy* – A managed policy isn't used with this add-on.
+* *Custom IAM permissions* – Custom permissions aren't used with this add-on.
+* *Setup and usage instructions* – See https://docs.rad.security/docs/installing-ksoc-in-the-aws-marketplace[Installing Rad Through The {aws} Marketplace] in the Rad Security documentation.
+
+
+[#add-on-solarwinds]
+== SolarWinds
+
+* *Publisher* – SOLARWINDS
+* *Name* – `solarwinds_swo-k8s-collector-addon`
+* *Namespace* – `solarwinds`
+* *Service account name* – A service account isn't used with this add-on.
+* *{aws} managed IAM policy* – A managed policy isn't used with this add-on.
+* *Custom IAM permissions* – Custom permissions aren't used with this add-on.
+* *Setup and usage instructions* – See https://documentation.solarwinds.com/en/success_center/observability/content/configure/configure-kubernetes.htm#MonitorAmazonEKS[Monitor an Amazon EKS cluster] in the SolarWinds documentation.
+
+
+[#add-on-solo]
+== Solo
+
+[abstract]
+--
+Learn about the Solo Amazon EKS add-on.
+--
+
+The add-on name is `solo-io_istio-distro` and the namespace is `istio-system`. Solo publishes the add-on.
+
+For information about the add-on, see https://docs.solo.io/gloo-mesh-enterprise/main/setup/install/eks_addon/[Installing Istio] in the Solo.io documentation..
+
+[#add-on-solo-service-account-name]
+=== Service account name
+
+A service account isn't used with this add-on.
+
+[#add-on-solo-managed-policy]
+=== {aws} managed IAM policy
+
+A managed policy isn't used with this add-on.
+
+[#add-on-solo-custom-permissions]
+=== Custom IAM permissions
+
+Custom permissions aren't used with this add-on.
+
+[#add-on-snyk]
+== Snyk
+
+* *Publisher* – SNYK
+* *Name* – `snyk_runtime-sensor`
+* *Namespace* – `snyk_runtime-sensor`
+* *Service account name* – A service account isn't used with this add-on.
+* *{aws} managed IAM policy* – A managed policy isn't used with this add-on.
+* *Custom IAM permissions* – Custom permissions aren't used with this add-on.
+* *Setup and usage instructions* – See https://docs.snyk.io/integrate-with-snyk/snyk-runtime-sensor[Snyk runtime sensor] in the Snyk user docs.
+
+
+[#add-on-stormforge]
+== Stormforge
+
+[abstract]
+--
+Learn about the Stormforge Amazon EKS add-on.
+--
+
+The add-on name is `stormforge_optimize-Live` and the namespace is `stormforge-system`. Stormforge publishes the add-on.
+
+For information about the add-on, see https://docs.stormforge.io/optimize-live/getting-started/install-v2/[Installing the StormForge Agent] in the StormForge documentation.
+
+[#add-on-stormforge-service-account-name]
+=== Service account name
+
+A service account isn't used with this add-on.
+
+[#add-on-stormforge-managed-policy]
+=== {aws} managed IAM policy
+
+A managed policy isn't used with this add-on.
+
+[#add-on-stormforge-custom-permissions]
+=== Custom IAM permissions
+
+Custom permissions aren't used with this add-on.
+
+[#add-on-suse]
+== SUSE
+* *Publisher* – SUSE
+* *Name* – `suse_observability-agent`
+* *Namespace* – `suse-observability`
+* *Service account name* – A service account isn't used with this add-on.
+* *{aws} managed IAM policy* – A managed policy isn't used with this add-on.
+* *Custom IAM permissions* – Custom permissions aren't used with this add-on.
+* *Setup and usage instructions* – See https://docs.stackstate.com/get-started/k8s-quick-start-guide#amazon-eks[Quick Start] in the SUSE documentation.
+
+[#add-on-splunk]
+== Splunk
+
+[abstract]
+--
+Learn about the Splunk Amazon EKS add-on.
+--
+
+The add-on name is `splunk_splunk-otel-collector-chart` and the namespace is `splunk-monitoring`. Splunk publishes the add-on.
+
+For information about the add-on, see https://help.splunk.com/en/splunk-observability-cloud/manage-data/splunk-distribution-of-the-opentelemetry-collector/get-started-with-the-splunk-distribution-of-the-opentelemetry-collector/collector-for-kubernetes/kubernetes-eks-add-on[Install the Splunk add-on for Amazon EKS] in the Splunk documentation.
+
+[#add-on-splunk-service-account-name]
+=== Service account name
+
+A service account isn't used with this add-on.
+
+[#add-on-splunk-managed-policy]
+=== {aws} managed IAM policy
+
+A managed policy isn't used with this add-on.
+
+[#add-on-splunk-custom-permissions]
+=== Custom IAM permissions
+
+Custom permissions aren't used with this add-on.
+
+[#add-on-teleport]
+== Teleport
+
+[abstract]
+--
+Learn about the Teleport Amazon EKS add-on.
+--
+
+The add-on name is `teleport_teleport` and the namespace is `teleport`. Teleport publishes the add-on.
+
+For information about the add-on, see https://goteleport.com/how-it-works/[How Teleport Works] in the Teleport documentation.
+
+[#add-on-teleport-service-account-name]
+=== Service account name
+
+A service account isn't used with this add-on.
+
+[#add-on-teleport-managed-policy]
+=== {aws} managed IAM policy
+
+A managed policy isn't used with this add-on.
+
+[#add-on-teleport-custom-permissions]
+=== Custom IAM permissions
+
+Custom permissions aren't used with this add-on.
+
+[#add-on-tetrate]
+== Tetrate
+
+[abstract]
+--
+Learn about the Tetrate Amazon EKS add-on.
+--
+
+The add-on name is `tetrate-io_istio-distro` and the namespace is `istio-system`. Tetrate Io publishes the add-on.
+
+For information about the add-on, see the https://tetratelabs.io/[Tetrate Istio Distro] website.
+
+[#add-on-tetrate-service-account-name]
+=== Service account name
+
+A service account isn't used with this add-on.
+
+[#add-on-tetrate-managed-policy]
+=== {aws} managed IAM policy
+
+A managed policy isn't used with this add-on.
+
+[#add-on-tetrate-custom-permissions]
+=== Custom IAM permissions
+
+Custom permissions aren't used with this add-on.
+
+[#add-on-upbound]
+== Upbound Universal Crossplane
+
+[abstract]
+--
+Learn about the Upbound Universal Crossplane Amazon EKS add-on.
+--
+
+The add-on name is `upbound_universal-crossplane` and the namespace is `upbound-system`. Upbound publishes the add-on.
+
+For information about the add-on, see https://docs.upbound.io/uxp/[Upbound Universal Crossplane (UXP)] in the Upbound documentation.
+
+[#add-on-upbound-service-account-name]
+=== Service account name
+
+A service account isn't used with this add-on.
+
+[#add-on-upbound-managed-policy]
+=== {aws} managed IAM policy
+
+A managed policy isn't used with this add-on.
+
+[#add-on-upbound-custom-permissions]
+=== Custom IAM permissions
+
+Custom permissions aren't used with this add-on.
+
+[#add-on-upwind]
+== Upwind
+
+[abstract]
+--
+Learn about the Upwind Amazon EKS add-on.
+--
+
+The add-on name is `upwind` and the namespace is `upwind`. Upwind publishes the add-on.
+
+For information about the add-on, see https://docs.upwind.io/install-sensor/kubernetes/install?installation-method=amazon-eks-addon[Upwind documentation].
+
+[#add-on-upwind-service-account-name]
+=== Service account name
+
+A service account isn't used with this add-on.
+
+[#add-on-upwind-managed-policy]
+=== {aws} managed IAM policy
+
+A managed policy isn't used with this add-on.
+
+[#add-on-upwind-custom-permissions]
+=== Custom IAM permissions
+
+Custom permissions aren't used with this add-on.

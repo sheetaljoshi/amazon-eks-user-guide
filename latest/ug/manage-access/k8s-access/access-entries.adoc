@@ -1,0 +1,74 @@
+include::../../attributes.txt[]
+
+[.topic]
+[#access-entries]
+= Grant IAM users access to Kubernetes with EKS access entries
+:info_titleabbrev: Access entries
+
+[abstract]
+--
+Learn how to manage access entries for IAM principals to your Amazon EKS cluster, including creating, updating, and deleting access entries for fine-grained authentication and authorization.
+--
+
+This section is designed to show you how to manage IAM principal access to Kubernetes clusters in Amazon Elastic Kubernetes Service (EKS) using access entries and policies. You'll find details on changing authentication modes, migrating from legacy `aws-auth` ConfigMap entries, creating, updating, and deleting access entries, associating policies with entries, reviewing predefined policy permissions, and key prerequisites and considerations for secure access management.
+
+== Overview
+
+EKS access entries are the best way to grant users access to the Kubernetes API. For example, you can use access entries to grant developers access to use kubectl. Fundamentally, an EKS access entry associates a set of Kubernetes permissions with an IAM identity, such as an IAM role. For example, a developer may assume an IAM role and use that to authenticate to an EKS Cluster.
+
+== Features
+
+* **Centralized Authentication and Authorization**: Controls access to Kubernetes clusters directly via Amazon EKS APIs, eliminating the need to switch between {aws} and Kubernetes APIs for user permissions.
+* **Granular Permissions Management**: Uses access entries and policies to define fine-grained permissions for {aws} IAM principals, including modifying or revoking cluster-admin access from the creator.
+* **IaC Tool Integration**: Supports infrastructure as code tools like {aws} CloudFormation, Terraform, and {aws} CDK to define access configurations during cluster creation.
+* **Misconfiguration Recovery**: Allows restoring cluster access through the Amazon EKS API without direct Kubernetes API access.
+* **Reduced Overhead and Enhanced Security**: Centralizes operations to lower overhead while leveraging {aws} IAM features like CloudTrail audit logging and multi-factor authentication.
+
+
+== How to attach permissions
+You can attach Kubernetes permissions to access entries in two ways:
+
+* Use an access policy. Access policies are pre-defined Kubernetes permissions templates maintained by {aws}. For more information, see <<access-policy-permissions>>.
+* Reference a Kubernetes group. If you associate an IAM Identity with a Kubernetes group, you can create Kubernetes resources that grant the group permissions. For more information, see https://kubernetes.io/docs/reference/access-authn-authz/rbac/[Using RBAC Authorization] in the Kubernetes documentation.
+
+== Considerations
+
+When enabling EKS access entries on existing clusters, keep the following in mind:
+
+* **Legacy Cluster Behavior**: For clusters created before the introduction of access entries (those with initial platform versions earlier than specified in link:eks/latest/userguide/platform-versions.html[Platform version requirements,type="documentation"]), EKS automatically creates an access entry reflecting pre-existing permissions. This entry includes the IAM identity that originally created the cluster and the administrative permissions granted to that identity during cluster creation.
+* **Handling Legacy `aws-auth` ConfigMap**: If your cluster relies on the legacy `aws-auth` ConfigMap for access management, only the access entry for the original cluster creator is automatically created upon enabling access entries. Additional roles or permissions added to the ConfigMap (e.g., custom IAM roles for developers or services) are not automatically migrated. To address this, manually create corresponding access entries.
+
+== Get started
+
+. Determine the IAM Identity and Access policy you want to use.
+** <<access-policy-permissions>>
+. Enable EKS Access Entries on your cluster. Confirm you have a supported platform version.
+** <<setting-up-access-entries>>
+. Create an access entry that associates an IAM Identity with Kubernetes permission.
+** <<creating-access-entries>>
+. Authenticate to the cluster using the IAM identity.
+** <<install-awscli>>
+** <<install-kubectl>>
+
+
+[.topic]
+
+include::access-policies.adoc[leveloffset=+1]
+
+include::migrating-access-entries.adoc[leveloffset=+1]
+
+include::access-policy-reference.adoc[leveloffset=+1]
+
+include::setting-up-access-entries.adoc[leveloffset=+1]
+
+include::creating-access-entries.adoc[leveloffset=+1]
+
+include::updating-access-entries.adoc[leveloffset=+1]
+
+include::deleting-access-entries.adoc[leveloffset=+1]
+
+include::set-custom-username.adoc[leveloffset=+1]
+
+include::create-standard-entry-policy.adoc[leveloffset=+1]
+
+include::create-k8s-group-entry.adoc[leveloffset=+1]

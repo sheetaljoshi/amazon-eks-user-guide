@@ -1,0 +1,58 @@
+include::../attributes.txt[]
+
+[.topic]
+[#security]
+= Security in Amazon EKS
+:info_titleabbrev: Security
+
+[abstract]
+--
+Configure Amazon EKS to meet your security and compliance objectives, and learn how to use other {aws} services that help you to secure your Amazon EKS resources.
+--
+
+
+Cloud security at {aws} is the highest priority. As an {aws} customer, you benefit from a data center and network architecture that is built to meet the requirements of the most security-sensitive organizations.
+
+Security is a shared responsibility between {aws} and you. The link:compliance/shared-responsibility-model/[shared responsibility model,type="marketing"] describes this as security _of_ the cloud and security _in_ the cloud:
+
+* *Security of the cloud* – {aws} is responsible for protecting the infrastructure that runs {aws} services in the {aws} Cloud. For Amazon EKS, {aws} is responsible for the Kubernetes control plane, which includes the control plane nodes and `etcd` database. Third-party auditors regularly test and verify the effectiveness of our security as part of the link:compliance/programs/[{aws} compliance programs,type="marketing"]. To learn about the compliance programs that apply to Amazon EKS, see link:compliance/services-in-scope/[{aws} Services in Scope by Compliance Program,type="marketing"].
+* *Security in the cloud* – Your responsibility includes the following areas.
++
+** The security configuration of the data plane, including the configuration of the security groups that allow traffic to pass from the Amazon EKS control plane into the customer VPC
+** The configuration of the nodes and the containers themselves
+** The node's operating system (including updates and security patches)
+** Other associated application software:
++
+*** Setting up and managing network controls, such as firewall rules
+*** Managing platform-level identity and access management, either with or in addition to IAM
+** The sensitivity of your data, your company's requirements, and applicable laws and regulations
+
+Amazon EKS is certified by multiple compliance programs for regulated and sensitive applications. Amazon EKS is compliant with link:compliance/soc-faqs/[SOC,type="marketing"], link:compliance/pci-dss-level-1-faqs/[PCI,type="marketing"], link:compliance/iso-certified/[ISO,type="marketing"], link:compliance/fedramp/[FedRAMP-Moderate,type="marketing"], link:compliance/irap/[IRAP,type="marketing"], link:compliance/bsi-c5/[C5,type="marketing"], link:compliance/k-isms/[K-ISMS,type="marketing"], link:compliance/esquema-nacional-de-seguridad/[ENS High,type="marketing"], link:compliance/OSPAR/[OSPAR,type="marketing"], link:compliance/hitrust/[HITRUST CSF,type="marketing"], and is a link:compliance/hipaa-compliance/[HIPAA,type="marketing"] eligible service. For more information, see <<cluster-auth>>.
+
+This documentation helps you understand how to apply the shared responsibility model when using Amazon EKS. The following topics show you how to configure Amazon EKS to meet your security and compliance objectives. You also learn how to use other {aws} services that help you to monitor and secure your Amazon EKS resources.
+
+[NOTE]
+====
+
+Linux containers are made up of control groups (cgroups) and namespaces that help limit what a container can access, but all containers share the same Linux kernel as the host Amazon EC2 instance. Running a container as the root user (UID 0) or granting a container access to host resources or namespaces such as the host network or host PID namespace are strongly discouraged, because doing so reduces the effectiveness of the isolation that containers provide.
+
+====
+
+[.topiclist]
+[[Topic List]]
+
+include::security-best-practices.adoc[leveloffset=+1]
+
+include::configuration-vulnerability-analysis.adoc[leveloffset=+1]
+
+include::compliance.adoc[leveloffset=+1]
+
+include::security-eks.adoc[leveloffset=+1]
+
+include::security-k8s.adoc[leveloffset=+1]
+
+include::auto-security.adoc[leveloffset=+1]
+
+include::capabilities-security.adoc[leveloffset=+1]
+
+include::iam-reference/security-iam.adoc[leveloffset=+1]

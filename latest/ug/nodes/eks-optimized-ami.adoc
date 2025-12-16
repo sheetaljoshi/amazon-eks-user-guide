@@ -1,0 +1,57 @@
+include::../attributes.txt[]
+
+[.topic]
+[#eks-optimized-ami]
+= Create nodes with optimized Amazon Linux AMIs
+:info_titleabbrev: Amazon Linux
+
+[abstract]
+--
+Select an Amazon EKS-optimized Amazon Linux AMI to provision your cluster nodes with support for standard, accelerated, and Arm-based architectures.
+--
+
+Amazon Elastic Kubernetes Service (Amazon EKS) provides specialized Amazon Machine Images (AMIs) optimized for running Kubernetes worker nodes. These EKS-optimized Amazon Linux (AL) AMIs are pre-configured with essential components—such as `kubelet`, the AWS IAM Authenticator, and `containerd`—to ensure seamless integration and security within your clusters. This guide details the available AMI versions and outlines specialized options for accelerated computing and Arm-based architectures.
+
+[#ami-considerations]
+== Considerations
+* You can track security or privacy events for Amazon Linux at the https://alas.aws.amazon.com/[Amazon Linux security center] by choosing the tab for your desired version. You can also subscribe to the applicable RSS feed. Security and privacy events include an overview of the issue, what packages are affected, and how to update your instances to correct the issue.
+* Before deploying an accelerated or Arm AMI, review the information in <<gpu-ami,Amazon EKS-optimized accelerated Amazon Linux AMIs>> and <<arm-ami>>.
+* Amazon EC2 `P2` instances aren't supported on Amazon EKS because they require `NVIDIA` driver version 470 or earlier.
+* Any newly created managed node groups in clusters on version `1.30` or newer will automatically default to using AL2023 as the node operating system.
+
+[#gpu-ami]
+== Amazon EKS-optimized accelerated Amazon Linux AMIs
+
+Amazon EKS-optimized accelerated Amazon Linux (AL) AMIs are built on top of the standard EKS-optimized Amazon Linux AMIs. They are configured to serve as optional images for Amazon EKS nodes to support GPU, link:machine-learning/inferentia/[Inferentia,type="marketing"], and link:machine-learning/trainium/[Trainium,type="marketing"] based workloads.
+
+For more information, see <<ml-eks-optimized-ami>>.
+
+[#arm-ami]
+== Amazon EKS-optimized Arm Amazon Linux AMIs
+
+Arm instances deliver significant cost savings for scale-out and Arm-based applications such as web servers, containerized microservices, caching fleets, and distributed data stores. When adding Arm nodes to your cluster, review the following considerations.
+
+* If your cluster was deployed before August 17, 2020, you must do a one-time upgrade of critical cluster add-on manifests. This is so that Kubernetes can pull the correct image for each hardware architecture in use in your cluster. For more information about updating cluster add-ons, see <<update-existing-cluster>>. If you deployed your cluster on or after August 17, 2020, then your CoreDNS, `kube-proxy`, and Amazon VPC CNI plugin for Kubernetes add-ons are already multi-architecture capable.  
+* Applications deployed to Arm nodes must be compiled for Arm.
+* If you have DaemonSets that are deployed in an existing cluster, or you want to deploy them to a new cluster that you also want to deploy Arm nodes in, then verify that your DaemonSet can run on all hardware architectures in your cluster.  
+* You can run Arm node groups and x86 node groups in the same cluster. If you do, consider deploying multi-architecture container images to a container repository such as Amazon Elastic Container Registry and then adding node selectors to your manifests so that Kubernetes knows what hardware architecture a Pod can be deployed to. For more information, see link:AmazonECR/latest/userguide/docker-push-multi-architecture-image.html[Pushing a multi-architecture image,type="documentation"] in the _Amazon ECR User Guide_ and the link:containers/introducing-multi-architecture-container-images-for-amazon-ecr[Introducing multi-architecture container images for Amazon ECR,type="blog"] blog post.
+
+[#linux-more-information]
+== More information
+
+For more information about using Amazon EKS-optimized Amazon Linux AMIs, see the following sections:
+
+* To use Amazon Linux with managed node groups, see <<managed-node-groups>>.
+* To launch self-managed Amazon Linux nodes, see <<retrieve-ami-id>>.
+* For version information, see <<eks-linux-ami-versions>>.
+* To retrieve the latest IDs of the Amazon EKS-optimized Amazon Linux AMIs, see <<retrieve-ami-id>>.
+* For open-source scripts that are used to build the Amazon EKS-optimized AMIs, see <<eks-ami-build-scripts>>.
+
+include::al2023.adoc[leveloffset=+1]
+
+include::eks-linux-ami-versions.adoc[leveloffset=+1]
+
+include::retrieve-ami-id.adoc[leveloffset=+1]
+
+include::eks-ami-build-scripts.adoc[leveloffset=+1]
+

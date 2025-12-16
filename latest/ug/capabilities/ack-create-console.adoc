@@ -1,0 +1,83 @@
+include::../attributes.txt[]
+
+[.topic]
+[#ack-create-console]
+= Create an ACK capability using the Console
+:info_titleabbrev: Console
+
+This topic describes how to create an {aws} Controllers for Kubernetes (ACK) capability using the {aws-management-console}.
+
+== Create the ACK capability
+
+. Open the Amazon EKS console at https://console.aws.amazon.com/eks/home#/clusters.
+
+. Select your cluster name to open the cluster detail page.
+
+. Choose the *Capabilities* tab.
+
+. In the left navigation, choose *{aws} Controllers for Kubernetes (ACK)*.
+
+. Choose *Create {aws} Controllers for Kubernetes capability*.
+
+. For *IAM Capability Role*:
++
+* If you already have an IAM Capability Role, select it from the dropdown
+* If you need to create a role, choose *Create admin role*
++
+This opens the IAM console in a new tab with pre-populated trust policy and the `AdministratorAccess` managed policy. You can unselect this policy and add other permissions if you prefer.
++
+After creating the role, return to the EKS console and the role will be automatically selected.
++
+[IMPORTANT]
+====
+The suggested `AdministratorAccess` policy grants broad permissions and is intended to streamline getting started.
+For production use, replace this with a custom policy that grants only the permissions needed for the specific {aws} services you plan to manage with ACK.
+For guidance on creating least-privilege policies, see <<ack-permissions>> and <<capabilities-security>>.
+====
+
+. Choose *Create*.
+
+The capability creation process begins.
+
+== Verify the capability is active
+
+. On the *Capabilities* tab, view the ACK capability status.
+
+. Wait for the status to change from `CREATING` to `ACTIVE`.
+
+. Once active, the capability is ready to use.
+
+For information about capability statuses and troubleshooting, see <<working-with-capabilities>>.
+
+== Verify custom resources are available
+
+After the capability is active, verify that ACK custom resources are available in your cluster.
+
+*Using the console*
+
+. Navigate to your cluster in the Amazon EKS console
+. Choose the *Resources* tab
+. Choose *Extensions*
+. Choose *CustomResourceDefinitions*
+
+You should see a number of CRDs listed for {aws} resources.
+
+*Using kubectl*
+
+[source,bash,subs="verbatim,attributes"]
+----
+kubectl api-resources | grep services.k8s.aws
+----
+
+You should see a number of APIs listed for {aws} resources.
+
+[NOTE]
+====
+The capability for {aws} Controllers for Kubernetes will install a number of CRDs for a variety of {aws} resources.
+====
+
+== Next steps
+
+* <<ack-concepts>> - Understand ACK concepts and get started
+* <<ack-permissions>> - Configure IAM permissions for other {aws} services
+* <<working-with-capabilities>> - Manage your ACK capability resource

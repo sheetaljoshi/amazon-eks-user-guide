@@ -1,0 +1,157 @@
+include::../attributes.txt[]
+
+[.topic]
+[#capabilities-considerations]
+= EKS Capabilities considerations
+:info_titleabbrev: Considerations
+
+[abstract]
+--
+Plan your EKS Capabilities deployment with guidance on choosing between managed and self-managed solutions, multi-cluster architecture patterns, and operational considerations.
+--
+
+This topic covers important considerations for using EKS Capabilities, including access control design, choosing between EKS Capabilities and self-managed solutions, architectural patterns for multi-cluster deployments, and operational best practices.
+
+== Capability IAM roles and Kubernetes RBAC
+
+Each EKS capability resource has a configured capability IAM role.
+The capability role is used to grant {aws} service permissions for EKS capabilities to act on your behalf.
+For example, to use the EKS Capability for ACK to manage Amazon S3 Buckets, you will grant S3 Bucket administrative permissions to the capability, enabling it to create and manage buckets.
+
+Once the capability is configured, S3 resources in AWS can be created and managed with Kubernetes custom resources in your cluster.
+Kubernetes RBAC is the in-cluster access control mechanism for determining which users and groups can create and manage those custom resources.
+For example, grant specific Kubernetes RBAC users and groups permissions to create and manage `Bucket` resources in namespaces you choose.
+
+In this way, IAM and Kubernetes RBAC are two halves of the end-to-end access control system that governs permissions related to EKS Capabilities and resources.
+It's important to design the right combination of IAM permissions and RBAC access policies for your use case.
+
+For additional information on capability IAM roles and Kubernetes permissions, see <<capabilities-security>>.
+
+
+== Multi-cluster architecture patterns
+
+When deploying capabilities across multiple clusters, consider these common architectural patterns:
+
+*Hub and Spoke with centralized management*
+
+Run all three capabilities in a centrally managed cluster to orchestrate workloads and manage cloud infrastructure across multiple workload clusters.
+
+* Argo CD on the management cluster deploys applications to workload clusters in different regions or accounts
+* ACK on the management cluster provisions {aws} resources (RDS, S3, IAM) for all clusters
+* kro on the management cluster creates portable platform abstractions that work across all clusters
+
+This pattern centralizes workload and cloud infrastructure management, and can simplify operations for organizations managing many clusters.
+
+*Decentralized GitOps*
+
+Workloads and cloud infrastructure are managed by capabilities on the same cluster where workloads are running.
+
+* Argo CD manages application resources on the local cluster.
+* ACK resources are used for cluster and workload needs.
+* kro platform abstractions are installed and orchestrate local resources.
+
+This pattern decentralizes operations, with teams managing their own dedicated platform services in one or more clusters.
+
+*Hub and Spoke with Hybrid ACK Deployment*
+
+Combine centralized and decentralized models, with centralized application deployments and resource management based on scope and ownership.
+
+* Hub cluster:
+** Argo CD manages GitOps deployments to the local cluster and all remote workload clusters
+** ACK is used on the management cluster for admin-scoped resources (production databases, IAM roles, VPCs)
+** kro is used on the management cluster for reusable platform abstractions
+* Spoke clusters:
+** Workloads are managed via Argo CD on the centralized hub cluster
+** ACK is used locally for workload-scoped resources (S3 buckets, ElastiCache instances, SQS queues)
+** kro is used locally for resource compositions and building block patterns
+
+This pattern separates concerns—platform teams manage critical infrastructure centrally on management clusters, optionally including workload clusters, while application teams specify and manage cloud resources alongside workloads.
+
+*Choosing a Pattern*
+
+Consider these factors when selecting an architecture:
+
+* *Organizational structure*: Centralized platform teams favor hub patterns; decentralized teams may prefer per-cluster capabilities
+* *Resource scope*: Admin-scoped resources (databases, IAM) often benefit from central management; workload resources (buckets, queues) can be managed locally
+* *Self-service*: Centralized platform teams can author and distribute prescriptive custom resources to enable safe self-service of cloud resources for common workload needs
+* *Cluster fleet management*: Centralized management clusters provide a customer-owned control plane for EKS cluster fleet management, along with other admin-scoped resources
+* *Compliance requirements*: Some organizations require centralized control for audit and governance
+* *Operational complexity*: Fewer capability instances simplify operations but may create bottlenecks
+
+[NOTE]
+====
+You can start with one pattern and evolve to another as your platform matures.
+Capabilities are independent—you can deploy them differently across clusters based on your needs.
+====
+
+
+== Comparing EKS Capabilities to self-managed solutions
+
+EKS Capabilities provide fully managed experiences for popular Kubernetes tools and controllers that run in EKS.
+This differs from self-managed solutions, which you install and operate in your cluster.
+
+=== Key Differences
+
+*Deployment and management*
+
+{aws} fully manages EKS Capabilities with no installation, configuration, or maintenance of component software required.
+{aws} installs and manages all required Kubernetes Custom Resource Definitions (CRDs) in the cluster automatically.
+
+With self-managed solutions, you install and configure cluster software using Helm charts, kubectl, or other operators.
+You have full control over the software lifecycle and runtime configuration of your self-managed solutions, providing customizations at any layer of the solution.
+
+*Operations and maintenance*
+
+{aws} manages patching and other software lifecycle operations for EKS Capabilities, with automatic updates and security patches.
+EKS Capabilities are integrated with {aws} features for streamlined configurations, provides built-in highly availability and fault tolerance, and eliminates in-cluster troubleshooting of controller workloads.
+
+Self-managed solutions require you to monitor component health and logs, apply security patches and version updates, configure high availability with multiple replicas and pod disruption budgets, troubleshoot and remediate controller workload issues, and manage releases and versions.
+You have full control over your deployments, but this often requires bespoke solutions for private cluster access and other integrations which must align with organizational standards and security compliance requirements.
+
+*Resource consumption*
+
+EKS Capabilities run in EKS and off of your clusters, freeing up node resources and cluster resources.
+Capabilities do not use cluster workload resources, do not consume CPU or memory on your worker nodes, scale automatically, and have minimal impact on cluster capacity planning.
+
+Self-managed solutions run controllers and other components on your worker nodes, directly consuming worker node resources, cluster IPs, and other cluster resources.
+Managing cluster services requires capacity planning for their workloads, and requires planning and configuration of resource requests and limits to manage scaling and high availability requirements.
+
+*Feature support*
+
+As fully managed service features, EKS Capabilities are by their nature opinionated compared to self-managed solutions.
+While capabilities will support most features and use cases, there will be a difference in coverage when compared to self-managed solutions.
+
+With self-managed solutions, you fully control the configuration, optional features, and other aspects of functionality for your software.
+You may choose to run your own custom images, customize all aspects of configuration, and fully control your self-managed solution functionality.
+
+*Cost Considerations*
+
+Each EKS capability resource has a related hourly cost, which differs based upon the capability type.
+Cluster resources managed by the capability also have an associated hourly cost with their own pricing. For more information, see https://aws.amazon.com/eks/pricing/[Amazon EKS pricing^].
+
+Self-managed solutions have no direct costs related to {aws} charges, but you pay for cluster compute resources used by controllers and related workloads.
+Beyond node and cluster resource consumption, the full cost of ownership with self-managed solutions includes operational overhead and expense of maintenance, troubleshooting, and support.
+
+
+=== Choosing between EKS Capabilities and self-managed solutions
+
+*EKS Capabilities* Consider this choice when you want to reduce operational overhead and focus on differentiated value in your software and systems, rather than cluster platform operations for foundational requirements.
+Use EKS Capabilities when you want to minimize the operational burden of security patches and software lifecycle management, free up node and cluster resources for application workloads, simplify configuration and security management, and benefit from {aws} support coverage.
+EKS Capabilities are ideal for most production use cases and are the recommended approach for new deployments.
+
+*Self-managed solutions* Consider this choice when you require specific Kubernetes resource API versions, custom controller builds, have existing automation and tooling built around self-managed deployments, or need deep customization of controller runtime configurations.
+Self-managed solutions provide flexibility for specialized use cases, and you have complete control over your deployment and runtime configuration.
+
+[NOTE]
+====
+EKS Capabilities can coexist in your cluster with self-managed solutions, and step-wise migrations are possible to achieve.
+====
+
+
+=== Capability-Specific Comparisons
+
+For detailed comparisons including capability-specific features, upstream differences, and migration paths see:
+
+* <<ack-comparison>>
+* <<argocd-comparison>>
+* <<kro-comparison>>

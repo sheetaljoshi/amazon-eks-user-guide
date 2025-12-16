@@ -1,0 +1,67 @@
+include::../attributes.txt[]
+
+[.topic]
+[#working-with-argocd]
+= Working with Argo CD
+:info_titleabbrev: Working with Argo CD
+
+[abstract]
+--
+Deploy and manage applications using GitOps with the Argo CD managed capability.
+--
+
+With Argo CD, you define applications in Git repositories and Argo CD automatically syncs them to your Kubernetes clusters.
+This enables declarative, version-controlled application deployment with automated drift detection.
+
+== Prerequisites
+
+Before working with Argo CD, you need:
+
+* An EKS cluster with the Argo CD capability created (see <<create-argocd-capability>>)
+* A Git repository containing Kubernetes manifests
+* `kubectl` configured to communicate with your cluster
+
+== Common tasks
+
+The following topics guide you through common Argo CD tasks:
+
+*<<argocd-configure-repositories>>* - Configure Argo CD to access your Git repositories using {aws} Secrets Manager, {aws} CodeConnections, or Kubernetes Secrets.
+
+*<<argocd-register-clusters>>* - Register target clusters where Argo CD will deploy applications.
+
+*<<argocd-projects>>* - Organize applications and enforce security boundaries using Projects for multi-tenant environments.
+
+*<<argocd-create-application>>* - Create Applications that deploy from Git repositories with automated or manual sync policies.
+
+*<<argocd-applicationsets>>* - Use ApplicationSets to deploy applications across multiple environments or clusters using templates and generators.
+
+== Access the Argo CD UI
+
+Access the Argo CD UI through the EKS console:
+
+. Open the Amazon EKS console
+. Select your cluster
+. Choose the *Capabilities* tab
+. Choose *Argo CD*
+. Choose *Open Argo CD UI*
+
+The UI provides visual application topology, sync status and history, resource health and events, manual sync controls, and application management.
+
+== Upstream documentation
+
+For detailed information about Argo CD features:
+
+* https://argo-cd.readthedocs.io/[Argo CD Documentation^] - Complete user guide
+* https://argo-cd.readthedocs.io/en/stable/user-guide/application-specification/[Application Spec^] - Full Application API reference
+* https://argo-cd.readthedocs.io/en/stable/user-guide/application-set/[ApplicationSet Guide^] - ApplicationSet patterns and examples
+* https://github.com/argoproj/argo-cd[Argo CD GitHub^] - Source code and examples
+
+include::argocd-configure-repositories.adoc[leveloffset=+1]
+
+include::argocd-register-clusters.adoc[leveloffset=+1]
+
+include::argocd-projects.adoc[leveloffset=+1]
+
+include::argocd-create-application.adoc[leveloffset=+1]
+
+include::argocd-applicationsets.adoc[leveloffset=+1]

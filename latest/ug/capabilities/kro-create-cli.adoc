@@ -1,0 +1,162 @@
+include::../attributes.txt[]
+
+[.topic]
+[#kro-create-cli]
+= Create a kro capability using the {aws} CLI
+:info_titleabbrev: {aws} CLI
+
+This topic describes how to create a kro (Kube Resource Orchestrator) capability using the {aws} CLI.
+
+== Prerequisites
+
+* *{aws} CLI* – Version `{auto-cli-v2-version}` or later. To check your version, run `aws --version`. For more information, see link:cli/latest/userguide/cli-chap-install.html[Installing, updating, and uninstalling the {aws} CLI,type="documentation"] in the {aws} Command Line Interface User Guide.
+* *`kubectl`* – A command line tool for working with Kubernetes clusters. For more information, see <<install-kubectl>>.
+
+== Step 1: Create an IAM Capability Role
+
+Create a trust policy file:
+
+[source,bash,subs="verbatim,attributes"]
+----
+cat > kro-trust-policy.json << 'EOF'
+{
+  "Version": "2012-10-17",{tcx5-waiver}
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "capabilities.eks.amazonaws.com"
+      },
+      "Action": [
+        "sts:AssumeRole",
+        "sts:TagSession"
+      ]
+    }
+  ]
+}
+EOF
+----
+
+Create the IAM role:
+
+[source,bash,subs="verbatim,attributes"]
+----
+aws iam create-role \
+  --role-name KROCapabilityRole \
+  --assume-role-policy-document file://kro-trust-policy.json
+----
+
+[NOTE]
+====
+Unlike ACK and Argo CD, kro does not require additional IAM permissions.
+kro operates entirely within your cluster and does not make {aws} API calls.
+The role is only needed to establish the trust relationship with the EKS capabilities service.
+====
+
+== Step 2: Create the kro capability
+
+Create the kro capability resource on your cluster. Replace [.replaceable]`region-code` with the {aws} Region where your cluster is located (such as `us-west-2`) and [.replaceable]`my-cluster` with your cluster name.
+
+[source,bash,subs="verbatim,attributes,quotes"]
+----
+aws eks create-capability \
+  --region [.replaceable]`region-code` \
+  --cluster-name [.replaceable]`my-cluster` \
+  --capability-name my-kro \
+  --type KRO \
+  --role-arn arn:aws:iam::$(aws sts get-caller-identity --query Account --output text):role/KROCapabilityRole \
+  --delete-propagation-policy RETAIN
+----
+
+The command returns immediately, but the capability takes some time to become active as EKS creates the required capability infrastructure and components.
+EKS will install the Kubernetes Custom Resource Definitions related to this capability in your cluster as it is being created.
+
+[NOTE]
+====
+If you receive an error that the cluster doesn't exist or you don't have permissions, verify:
+
+* The cluster name is correct
+* Your {aws} CLI is configured for the correct region
+* You have the required IAM permissions
+
+
+====
+
+== Step 3: Verify the capability is active
+
+Wait for the capability to become active. Replace [.replaceable]`region-code` with the {aws} Region that your cluster is in and replace [.replaceable]`my-cluster` with the name of your cluster.
+
+[source,bash,subs="verbatim,attributes,quotes"]
+----
+aws eks describe-capability \
+  --region [.replaceable]`region-code` \
+  --cluster-name [.replaceable]`my-cluster` \
+  --capability-name my-kro \
+  --query 'capability.status' \
+  --output text
+----
+
+The capability is ready when the status shows `ACTIVE`.
+
+You can also view the full capability details:
+
+[source,bash,subs="verbatim,attributes,quotes"]
+----
+aws eks describe-capability \
+  --region [.replaceable]`region-code` \
+  --cluster-name [.replaceable]`my-cluster` \
+  --capability-name my-kro
+----
+
+== Step 4: Grant permissions to manage Kubernetes resources
+
+By default, kro can only create and manage ResourceGraphDefinitions and their instances.
+To allow kro to create and manage the underlying Kubernetes resources defined in your ResourceGraphDefinitions, associate the `AmazonEKSClusterAdminPolicy` access policy with the capability's access entry.
+
+Get the capability role ARN:
+
+[source,bash,subs="verbatim,attributes,quotes"]
+----
+CAPABILITY_ROLE_ARN=$(aws eks describe-capability \
+  --region [.replaceable]`region-code` \
+  --cluster-name [.replaceable]`my-cluster` \
+  --capability-name my-kro \
+  --query 'capability.roleArn' \
+  --output text)
+----
+
+Associate the cluster admin policy:
+
+[source,bash,subs="verbatim,attributes,quotes"]
+----
+aws eks associate-access-policy \
+  --region [.replaceable]`region-code` \
+  --cluster-name [.replaceable]`my-cluster` \
+  --principal-arn $CAPABILITY_ROLE_ARN \
+  --policy-arn arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy \
+  --access-scope type=cluster
+----
+
+[IMPORTANT]
+====
+The `AmazonEKSClusterAdminPolicy` grants broad permissions to create and manage all Kubernetes resources and is intended to streamline getting started.
+For production use, create more restrictive RBAC policies that grant only the permissions needed for the specific resources your ResourceGraphDefinitions will manage.
+For guidance on configuring least-privilege permissions, see <<kro-permissions>> and <<capabilities-security>>.
+====
+
+== Step 5: Verify custom resources are available
+
+After the capability is active, verify that kro custom resources are available in your cluster:
+
+[source,bash,subs="verbatim,attributes"]
+----
+kubectl api-resources | grep kro.run
+----
+
+You should see the `ResourceGraphDefinition` resource type listed.
+
+== Next steps
+
+* <<kro-concepts>> - Understand kro concepts and resource composition
+* <<kro-concepts>> - Learn about SimpleSchema, CEL expressions, and composition patterns
+* <<working-with-capabilities>> - Manage your kro capability resource

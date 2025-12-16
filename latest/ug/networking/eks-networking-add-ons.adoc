@@ -1,0 +1,65 @@
+include::../attributes.txt[]
+
+[.topic]
+[#eks-networking-add-ons]
+= Manage networking add-ons for Amazon EKS clusters
+:info_titleabbrev: Manage networking add-ons
+
+[abstract]
+--
+Learn how to manage networking add-ons for your Amazon EKS cluster, including built-in components like Amazon VPC CNI plugin for Kubernetes, CoreDNS, and `kube-proxy`, as well as optional {aws} add-ons for load balancing and service mesh.
+--
+
+Several networking add-ons are available for your Amazon EKS cluster.
+
+
+[#eks-networking-add-ons-built-in]
+== Built-in add-ons
+
+[NOTE]
+====
+**When you create an EKS cluster:**
+
+* **Using the {aws} Console**: The built-in add-ons (like CoreDNS, kube-proxy, etc.) are automatically installed as Amazon EKS Add-ons. These can be easily configured and updated through the {aws} Console, CLI, or SDKs.
+
+* **Using other methods** (CLI, SDKs, etc.): The same built-in add-ons are installed as self-managed versions that run as regular Kubernetes deployments. These require manual configuration and updates since they can't be managed through {aws} tools.
+
+We recommend using Amazon EKS Add-ons rather than self-managed versions to simplify add-on management and enable centralized configuration and updates through {aws} services.
+====
+
+*Amazon VPC CNI plugin for Kubernetes*::
+This CNI add-on creates elastic network interfaces and attaches them to your Amazon EC2 nodes. The add-on also assigns a private `IPv4` or `IPv6` address from your VPC to each Pod and service. This add-on is installed, by default, on your cluster. For more information, see <<managing-vpc-cni>>. If you are using hybrid nodes, the VPC CNI is still installed by default but it is prevented from running on your hybrid nodes with an anti-affinity rule. For more information about your CNI options for hybrid nodes, see <<hybrid-nodes-cni>>.
+
+
+*CoreDNS*::
+CoreDNS is a flexible, extensible DNS server that can serve as the Kubernetes cluster DNS. CoreDNS provides name resolution for all Pods in the cluster. This add-on is installed, by default, on your cluster. For more information, see <<managing-coredns>>.
+
+
+*`kube-proxy`*::
+This add-on maintains network rules on your Amazon EC2 nodes and enables network communication to your Pods. This add-on is installed, by default, on your cluster. For more information, see <<managing-kube-proxy>>.
+
+
+[#eks-networking-add-ons-optional]
+== Optional {aws} networking add-ons
+
+*{aws} Load Balancer Controller*::
+When you deploy Kubernetes service objects of type `loadbalancer`, the controller creates {aws} Network Load Balancers . When you create Kubernetes ingress objects, the controller creates {aws} Application Load Balancers. We recommend using this controller to provision Network Load Balancers, rather than using the https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/guide/service/annotations/#legacy-cloud-provider[legacy Cloud Provider] controller built-in to Kubernetes. For more information, see the https://kubernetes-sigs.github.io/aws-load-balancer-controller[{aws} Load Balancer Controller] documentation.
+
+
+*{aws} Gateway API Controller*::
+This controller lets you connect services across multiple Kubernetes clusters using the https://gateway-api.sigs.k8s.io/[Kubernetes gateway API]. The controller connects Kubernetes services running on Amazon EC2 instances, containers, and serverless functions by using the link:vpc-lattice/latest/ug/what-is-vpc-service-network.html[Amazon VPC Lattice,type="documentation"] service. For more information, see the https://www.gateway-api-controller.eks.aws.dev/[{aws} Gateway API Controller] documentation.
+
+For more information about add-ons, see <<eks-add-ons>>.
+
+include::managing-vpc-cni.adoc[leveloffset=+1]
+
+include::alternate-cni-plugins.adoc[leveloffset=+1]
+
+include::pod-multus.adoc[leveloffset=+1]
+
+include::aws-load-balancer-controller.adoc[leveloffset=+1]
+
+include::managing-coredns.adoc[leveloffset=+1]
+
+include::managing-kube-proxy.adoc[leveloffset=+1]
+

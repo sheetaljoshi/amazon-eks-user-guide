@@ -1,0 +1,144 @@
+include::../attributes.txt[]
+
+[.topic]
+[#argocd-comparison]
+= Comparing EKS Capability for Argo CD to self-managed Argo CD
+:info_titleabbrev: Comparison to self-managed
+
+[abstract]
+--
+Understand the differences between the EKS Capability for Argo CD and self-managed Argo CD installations.
+This comparison helps you choose the right deployment model for your GitOps workflows.
+--
+
+The EKS Capability for Argo CD provides a fully managed Argo CD experience that runs in EKS.
+For a general comparison of EKS Capabilities vs self-managed solutions, see <<capabilities-considerations>>.
+This topic focuses on Argo CD-specific differences, including authentication, multi-cluster management, and upstream feature support.
+
+== Differences from upstream Argo CD
+
+The EKS Capability for Argo CD is based on upstream Argo CD but differs in how it's accessed, configured, and integrated with {aws} services.
+
+*RBAC and authentication*: The capability comes with three RBAC roles (admin, editor, viewer) and uses {aws} Identity Center for authentication instead of Argo CD's built-in authentication. Configure role mappings through the capability's `rbacRoleMapping` parameter to map Identity Center groups to Argo CD roles, not through Argo CD's `argocd-rbac-cm` ConfigMap. The Argo CD UI is hosted with its own direct URL (find it in the EKS console under your cluster's Capabilities tab), and API access uses {aws} authentication and authorization through IAM.
+
+*Cluster configuration*: The capability does not automatically configure local cluster or hub-and-spoke topologies. You configure your deployment target clusters and EKS access entries. The capability supports only Amazon EKS clusters as deployment targets using EKS cluster ARNs (not Kubernetes API server URLs). The capability does not automatically add the local cluster (`kubernetes.default.svc`) as a deployment target—to deploy to the same cluster where the capability is created, explicitly register that cluster using its ARN.
+
+*Simplified remote cluster access*: The capability simplifies multi-cluster deployments by using EKS Access Entries to grant Argo CD access to remote clusters, eliminating the need to configure IAM Roles for Service Accounts (IRSA) or set up cross-account IAM role assumptions. The capability also provides transparent access to fully private EKS clusters without requiring VPC peering or specialized networking configuration—{aws} manages connectivity between the Argo CD capability and private remote clusters automatically.
+
+*Direct {aws} service integration*: The capability provides direct integration with {aws} services through the Capability Role's IAM permissions. You can reference CodeCommit repositories, ECR Helm charts, and CodeConnections directly in Application resources without creating Repository configurations. This simplifies authentication and eliminates the need to manage separate credentials for {aws} services. See <<argocd-configure-repositories>> for details.
+
+*Namespace support*: The capability initially supports deploying applications to a single namespace, which you specify when creating the capability. Support for applications in multiple namespaces may be added in future releases.
+
+*Unsupported features*: The following features are not available in the managed capability:
+
+* Config Management Plugins (CMPs) for custom manifest generation
+* Custom Lua scripts for resource health assessment (built-in health checks for standard resources are supported)
+* The Notifications controller
+* Argo CD Image Updater
+* Custom SSO providers (only {aws} Identity Center is supported, including third-party federated identity through {aws} Identity Center)
+* UI extensions and custom banners
+* Direct access to `argocd-cm`, `argocd-params`, and other configuration ConfigMaps
+
+*Compatibility*: Applications and ApplicationSets work identically to upstream Argo CD with no changes to your manifests. The capability uses the same Kubernetes APIs and CRDs, so tools like `kubectl` work the same way. The capability fully supports Applications and ApplicationSets, GitOps workflows with automatic sync, multi-cluster deployments, sync policies (automated, prune, self-heal), sync waves and hooks, health assessment for standard Kubernetes resources, rollback capabilities, Git repository sources (HTTPS and SSH), Helm, Kustomize, and plain YAML manifests, GitHub app credentials, projects for multi-tenancy, and resource exclusions and inclusions.
+
+
+[#argocd-cli-configuration]
+== Using the Argo CD CLI with the managed capability
+
+The Argo CD CLI works the same as upstream Argo CD for most operations, but authentication and cluster registration differ.
+
+=== Prerequisites
+
+Install the Argo CD CLI following the https://argo-cd.readthedocs.io/en/stable/cli_installation/[upstream installation instructions^].
+
+=== Configuration
+
+Configure the CLI using environment variables:
+
+. Get the Argo CD server URL from the EKS console (under your cluster's *Capabilities* tab), or using the {aws} CLI:
++
+[source,bash,subs="verbatim,attributes,quotes"]
+----
+export ARGOCD_SERVER=$(aws eks describe-capability \
+  --cluster-name [.replaceable]`my-cluster` \
+  --capability-name [.replaceable]`my-argocd` \
+  --query 'capability.configuration.argoCd.serverUrl' \
+  --output text \
+  --region [.replaceable]`region-code`)
+----
+
+. Generate an account token from the Argo CD UI (*Settings* → *Accounts* → *admin* → *Generate New Token*), then set it as an environment variable:
++
+[source,bash]
+----
+export ARGOCD_AUTH_TOKEN="your-token-here"
+----
+
+[IMPORTANT]
+====
+This configuration uses the admin account token for initial setup and development workflows.
+For production use cases, use project-scoped roles and tokens to follow the principle of least privilege.
+For more information about configuring project roles and RBAC, see <<argocd-permissions>>.
+====
+
+
+. Set the required gRPC option:
++
+[source,bash]
+----
+export ARGOCD_OPTS="--grpc-web"
+----
+
+With these environment variables set, you can use the Argo CD CLI without the `argocd login` command.
+
+=== Key differences
+
+The managed capability has the following CLI limitations:
+
+* `argocd admin` commands are not supported (they require direct pod access)
+* `argocd login` is not supported (use account or project tokens instead)
+* `argocd cluster add` requires the `--aws-cluster-name` flag with the EKS cluster ARN
+
+=== Example: Register a cluster
+
+Register an EKS cluster for application deployment:
+
+[source,bash,subs="verbatim,attributes,quotes"]
+----
+# Get the cluster ARN
+CLUSTER_ARN=$(aws eks describe-cluster \
+  --name [.replaceable]`my-cluster` \
+  --query 'cluster.arn' \
+  --output text)
+
+# Register the cluster
+argocd cluster add $CLUSTER_ARN \
+  --aws-cluster-name $CLUSTER_ARN \
+  --name in-cluster \
+  --project default
+----
+
+For complete Argo CD CLI documentation, see the https://argo-cd.readthedocs.io/en/stable/user-guide/commands/argocd/[Argo CD CLI reference^].
+
+== Migration Path
+
+You can migrate from self-managed Argo CD to the managed capability:
+
+. Review your current Argo CD configuration for unsupported features (Notifications controller, CMPs, custom health checks)
+. Scale your self-managed Argo CD controllers to zero replicas
+. Create an Argo CD capability resource on your cluster
+. Export your existing Applications, ApplicationSets, and AppProjects
+. Migrate repository credentials, cluster secrets, and repository credential templates (repocreds)
+. If using GPG keys, TLS certificates, or SSH known hosts, migrate these configurations as well
+. Update `destination.server` fields to use cluster names or EKS cluster ARNs
+. Apply them to the managed Argo CD instance
+. Verify applications are syncing correctly
+. Decommission your self-managed Argo CD installation
+
+The managed capability uses the same Argo CD APIs and resource definitions, so your existing manifests work with minimal modification.
+
+== Next steps
+
+* <<create-argocd-capability>> - Create an Argo CD capability resource
+* <<working-with-argocd>> - Deploy your first application
+* <<argocd-considerations>> - Configure {aws} Identity Center integration
